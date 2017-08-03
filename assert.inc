@@ -27,3 +27,6 @@ iterate <type,value>, string,"", numeric,$00, float,0.0f
         end macro
     end match
 end iterate
+
+macro _assert_fasmg_identifier? result?*, token?
+end macro

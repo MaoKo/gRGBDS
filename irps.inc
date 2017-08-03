@@ -7,41 +7,89 @@ macro _pairing? list?*&
     end iterate
 end macro
 
+;irps value[+space|+ident], a . f
+;end irps
+
+macro _fasmg_identifier? result?*, token?
+    local string_token
+    string_token = (`token)
+    result = $01
+    if ((string_token and $FF) >= "0") & ((string_token and $FF) <= "9")
+        result = $00
+    else if (string_token = "")
+        result = $00
+    else if  ((string_token and $FF) = "$")
+        string_token = string (string_token shr $08)
+        iterate <lbound,ubound>, "0","9", "A","Z", "a","z"
+            if ((string_token and $FF) >= lbound) & ((string_token and $FF) <= ubound)
+                result = $00
+                break
+            end if
+        end iterate
+    end if
+    if (result)
+        _iterate_string char, string_token
+            if (char <> "$") & (char <> "%") & (char <> ".") & ((char < "0") | (char > "9"))\
+             & (char <> "@") & ((char < "A") | (char > "Z")) & (char <> "^") & (char <> "_")\
+             & ((char < "a") | (char > "z"))
+                result = $00
+                break
+            end if
+        end _iterate_string
+    end if
+end macro
+
 macro _core_irps? parameter?*, text?&
-    local iterator, incspace, nextspace, end_space, token, buffer, empty
+    local   iterator, stream, inc_space, inc_ident, next_space, end_space,\
+            identifier, valid_id, last_dot, buffer, token1, token2, empty
     iterator equ parameter
-    incspace = $00
-    match it=[=+=space?=], parameter
+    inc_space = $00
+    inc_ident = $00
+    match it=[ options =], parameter
         iterator equ it
-        incspace = $01
+        match =+ option_1 =| =+ option_2, options
+            match =space? =ident?, option_1 option_2
+            else match =ident? =space?, option_1 option_2
+            else
+                err "syntax error: bad irps option"
+            end match
+            inc_space = $01
+            inc_ident = $01
+        else match =+ =space?, options
+            inc_space = $01
+        else match =+ =ident?, options
+            inc_ident = $01
+        else
+            err "syntax error: bad irps option"
+        end match
     end match
-    nextspace = $00
+    next_space = $00
     buffer equ text
     empty  equ
     while $01
-        end_space = $00
-        if (nextspace)
-            nextspace = $00
+        if (next_space)
+            next_space = $00
             token equ
         else
             match _ remain, buffer
-                if (incspace)
+                if (inc_space)
                     match =_= remain2, buffer
-                        nextspace = $01
+                        next_space = $01
                     end match
                 end if
-                token  equ _
+                end_space = $00
                 match remain2= , buffer
                     end_space = $01
                 end match
+                token  equ _
                 buffer equ remain
                 if (end_space)
                     buffer equ buffer empty
                 end if
             else match _, buffer
-                if (incspace)
+                if (inc_space)
                     match =_= , buffer
-                        nextspace = $01
+                        next_space = $01
                     end match
                 end if
                 token  equ _
@@ -51,8 +99,45 @@ macro _core_irps? parameter?*, text?&
             end match
         end if
     end while
-    match it, iterator
-        outscope irpv it, token
+    define stream token1
+    if (inc_ident)
+        identifier equ
+        last_dot = $00
+        irpv item, token
+            _fasmg_identifier valid_id, item
+            if (valid_id) 
+                match,identifier
+                    identifier equ item
+                else if (`item = ".") | (last_dot)
+                    _insert_token identifier, item
+                    if ((`item) = ".")
+                        last_dot = $01
+                    end if
+                else
+                    token2 equ identifier
+                    identifier equ item
+                end if
+            else
+                match _1 =| _2, identifier | item
+                    token2 equ identifier
+                    token2 equ item
+                    identifier equ
+                else match _ =|, identifier | item
+                else
+                    token2 equ item
+                end match
+            end if
+            if ((`item) <> "") & ((`item) <> ".")
+                last_dot = $00
+            end if
+        end irpv
+        match _, identifier
+            token2 equ identifier
+        end match
+        define stream token2
+    end if
+    match it st, iterator stream
+        outscope irpv it, st
 end macro
 
 macro irps?! line?*&

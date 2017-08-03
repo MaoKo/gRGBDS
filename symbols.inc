@@ -103,7 +103,3 @@ end macro
 macro end?._catch_symbols?!
     restruc ?
 end macro
-
-; TODO RPN EXPR
-macro _rpn?
-end macro

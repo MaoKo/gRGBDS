@@ -92,7 +92,9 @@ macro _catch_sections?
                     _org?       =: org
                     _bank?      =: bank
                     _align?     =: align
+                    ;virtual at $00
                     _patchs?    =: $00
+                    ;end virtual
                     virtual at $00
                         space::
                         _area?  equ space
@@ -143,6 +145,12 @@ macro end?._catch_sections?
         purge   disable?
         restruc disable?
     end iterate
+end macro
+
+macro _rpn_expression? offset?*, expression?*, kind?*
+    local output_queue, operator_stack
+    irps item, expression
+    end irps
 end macro
 
 macro pushs?

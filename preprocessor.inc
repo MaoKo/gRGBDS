@@ -160,26 +160,18 @@ macro _subround_string? result?*, line?*&
 end macro
 
 macro _eval_each_string? result?*, line?*&
-    local check, stream, identifier, new_string, pool_entry, add_entry, end_item, wrap_item
-    result equ
+    local check, stream, identifier, empty, new_string, pool_entry, add_entry, wrap_item
+    result     equ
     identifier equ
+    empty      equ
     define stream result
-    end_item = $00
-    irps item[+space], line
+    irps item[+space], line empty
         wrap_item equ item
         _check_identifier check, (`item)
         if (check) | ((`item) = '.')
             define stream identifier
-            if (% = %%)
-                _insert_token identifier, item
-                define stream result
-                end_item = $01
-            end if
         else
             define stream result
-        end if
-
-        match =result?, stream
             add_entry = $00
             new_string equ
             if (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
@@ -203,13 +195,11 @@ macro _eval_each_string? result?*, line?*&
                 _add_constant_pool pool_entry, new_string
                 wrap_item equ pool_entry
             end if
-            if (~(end_item))
-                match _, identifier
-                    _insert_token wrap_item, item
-                end match
-            end if
+            match _, identifier
+                _insert_token wrap_item, item
+            end match
             identifier equ
-        end match
+        end if
         match _, stream
             _insert_token _, wrap_item
         end match
@@ -226,18 +216,20 @@ macro _expand_macro_parameter? result?*, line?*&
 end macro
 
 macro _expand_single_line_macro? result?*, line?*&
-    local return, lparen, global, insert, stream, partial, function, callargs, new_string, pool_entry
+    local return, empty, lparen, global, insert, stream, partial_ret, function, callargs, new_string, pool_entry
     result   equ
+    empty    equ
     function equ
     lparen = $00
     global = $01
-    irps item[+space], line
+    irps item[+space], line empty
         define stream result
         insert = $01
         match _, function
             match =(, item
                 insert = $00
                 lparen = lparen + $01
+                define stream callargs
             else match =), item
                 insert = $00
                 if (lparen <= $00)
@@ -251,11 +243,11 @@ macro _expand_single_line_macro? result?*, line?*&
                 end match
                 restore function
                 restore callargs
-                define partial callargs ; where the output of func () must go: in the result or callargs
+                define partial_ret callargs ; where the output of func() must go: in the result or another callargs
                 match,function
-                    define partial result
+                    define partial_ret result
                 end match
-                match insret, partial
+                match insret, partial_ret
                     if (return eqtype $00)
                         repeat $01, i:(return)
                             _insert_token insret, i
@@ -270,14 +262,11 @@ macro _expand_single_line_macro? result?*, line?*&
                         _insert_token insret, pool_entry
                     end if
                 end match
-            else
-                if (~(lparen))
-                    match not_space, item
-                        err "syntax error: single line macro must be followed by '('"
-                    end match
-                end if
-                define stream callargs
-            end match
+            else if (~(lparen))
+                match not_space, item
+                    err "syntax error: single line macro must be followed by '('"
+                end match
+            end if
         end match
         if (global) ; func not preceded by .
             iterate <func,pred>, STRLEN,strlen, STRCAT,strcat, STRCMP,strcmp,  STRIN, strin,\
@@ -301,8 +290,7 @@ macro _expand_single_line_macro? result?*, line?*&
             end match
         end if
     end irps
-    ; TODO WHEN LAST TOKEN IS A FUNC
-    if (lparen > $00); | (findfunc)
+    if (lparen > $00) | (~(insert))
         err "syntax error: single-line macro parenthesis not properly nested"
     end if
 end macro

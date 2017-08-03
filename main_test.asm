@@ -16,10 +16,12 @@
 ;    %
 ;end irpv
 
+include "assert_type.inc"
+include "string.inc"
 include "irps.inc"
 include "preprocessor.inc"
 
-_replace_bracket_operator result, a<
-match _, result
-    _
-end match
+empty equ 
+irps a[+ident|+space], a..b.e+ e . l .@ =
+    display `a, $0A
+end irps
