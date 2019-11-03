@@ -1,17 +1,17 @@
 
 macro strlen? str?*, retstr?*
-    must_string (str)
+    _assert_string (str)
     retstr = (lengthof (str))
 end macro
 
 macro strcat? str1?*, str2?*, retstr?*
-    must_string (str1), (str2)
+    _assert_string (str1), (str2)
     retstr = (string (((str2) shl ((lengthof (str1)) * $08)) or (str1)))
 end macro
 
 macro strcmp? str1?*, str2?*, retstr?*
     local max_size?, ch1?, ch2?
-    must_string (str1), (str2)
+    _assert_string (str1), (str2)
     max_size = (lengthof (str1))
     if (max_size < (lengthof (str2)))
         max_size = (lengthof (str2))
@@ -29,7 +29,7 @@ end macro
 
 macro strin? str1?*, str2?*, retidx?*
     local str2_mask
-    must_string (str1), (str2)
+    _assert_string (str1), (str2)
     str2_mask = ($01 shl (lengthof (str2) * $08)) - $01
     retidx = $00
     if ((lengthof (str1)) >= (lengthof (str2)))
@@ -46,7 +46,7 @@ end macro
 
 macro strrin? str1?*, str2?*, retidx?*
     local last_index, skip_str
-    must_string (str1), (str2)
+    _assert_string (str1), (str2)
     retidx = $00
     last_index = $00
     skip_str = (str1)
@@ -63,8 +63,8 @@ end macro
 ;; TODO HANDLE ERROR ;;
 macro strsub? str?*, pos?*, len?*, retstr?*
     local len_mask, is_error
-    must_string (str)
-    must_numeric_unsigned (pos), (len)
+    _assert_string (str)
+    _assert_numeric_unsigned (pos), (len)
     len_mask = (($01 shl (len * $08)) - $01)
     retstr = (string ((str shr ((pos - $01) * $08)) and len_mask))
 end macro
@@ -86,7 +86,7 @@ end macro
 iterate <func,head,tail>, strupr,'a','z',\
                           strlwr,'A','Z'
     macro func? str?*, retstr?*
-        must_string (str)
+        _assert_string (str)
         _strcvtcase str, retstr, head, tail
     end macro
 end iterate

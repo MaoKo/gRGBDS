@@ -1,6 +1,4 @@
 
-include "type.inc"
-
 macro _convert_float_fixed? dst?*, src?
     local intpart, decpart
     match _, src

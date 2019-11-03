@@ -1,6 +1,4 @@
 
-include "sections.inc"
-
 macro incbin? path?*, offset?&
     local bytes
     virtual at $00

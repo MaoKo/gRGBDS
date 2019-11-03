@@ -1,9 +1,4 @@
 
-include "irps.inc"
-include "string.inc"
-include "string_function.inc"
-include "symbols.inc"
-
 _constant_pool? := $00
 namespace _constant_pool?
     iterate kind, string,float
@@ -270,14 +265,17 @@ end macro
 macro _catch_line?!
     macro ?! line&
         local expand_line
-        match macro_name =: =macro?, line
-            err "not implemented yet"
-        else
-            _preprocess_line expand_line, line
-            match _, expand_line
-                ; _catch_symbols
-                _
-                ; end _catch_symbols
+        match ln, line
+            match macro_name =: =macro?, line
+                err "not implemented yet"
+            else
+                _preprocess_line expand_line, line
+                match _, expand_line
+                    ; _catch_symbols
+                    display "NEW LINE = ", `_, $0A
+                    _
+                    ; end _catch_symbols
+                end match
             end match
         end match
     end macro

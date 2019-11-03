@@ -1,8 +1,4 @@
 
-include "switch.inc"
-include "fixed_point.inc"
-include "macro_builder.inc"
-
 macro _iterate_string?! parameter?*, text?*
     local char, start, iterator
     must_string (text)

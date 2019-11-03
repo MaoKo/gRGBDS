@@ -1,6 +1,4 @@
 
-include "type.inc"
-
 _sections? := $00
 namespace _sections?
     element _section_type?
@@ -124,13 +122,11 @@ macro _catch_sections?
             else
                 _sections._current_section = found
                 iterate attr, kind,org,bank,align
-                    irpv it, section?._#attr
-                        indx found
+                    iirpv it, found, section?._#attr
                         if (~(attr relativeto it)) | (attr <> it)
                             err "Section exists but with a different type"
                         end if
-                        break
-                    end irpv
+                    end iirpv
                 end iterate
             end if
         else
@@ -158,8 +154,10 @@ macro end?._catch_sections?
 end macro
 
 macro pushs?
+    err "not yet implemented"
 end macro
 
 macro pops?
+    err "not yet implemented"
 end macro
 

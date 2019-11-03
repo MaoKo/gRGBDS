@@ -1,7 +1,7 @@
 
-include "string.inc"
-
 macro printt? text?*
+    _assert_string text
+    display text
 end macro
 
 macro printv?

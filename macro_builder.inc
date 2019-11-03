@@ -46,8 +46,10 @@ macro end?._define_macro?!
 end macro
 
 macro _shift_arguments? name?*, amount?*
+    err "not implemented yet"
 end macro
 
 macro _restore_arguments? name?*
+    err "not implemented yet"
 end macro
 

@@ -1,6 +1,4 @@
 
-include "sections.inc"
-
 _symbols? := $00
 namespace _symbols?
     _total?  = $00
@@ -96,4 +94,8 @@ end macro
 
 macro end?._catch_symbols?!
     restruc ?
+end macro
+
+; TODO RPN EXPR
+macro _rpn?
 end macro
