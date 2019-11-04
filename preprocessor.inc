@@ -109,54 +109,59 @@ macro _subround_string? result?*, line?*&
     end irps
 end macro
 
-; TODO
 macro _eval_each_string? result?*, line?*&
-    local check, find_id, pointer, identifier, new_string, pool_entry, add_entry, expand_item
+    local check, stream, identifier, new_string, pool_entry, add_entry, end_item, wrap_item
     result equ
     identifier equ
-    define pointer result
+    define stream result
+    end_item = $00
     irps item[+space], line
-        find_id = $00
-        expand_item equ item
-        match _, item
-            _check_identifier check, (`item)
-            if (check) | ((`item) = '.')
-                define pointer identifier
-                if (% <> %%)
-                    find_id = $01
-                end if
+        wrap_item equ item
+        _check_identifier check, (`item)
+        if (check) | ((`item) = '.')
+            define stream identifier
+            if (% = %%)
+                _insert_token identifier, item
+                define stream result
+                end_item = $01
             end if
-            if (~(find_id))
-                define pointer result
-                add_entry = $00
-                new_string equ
-                if (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
-                    add_entry = $01
-                    _eval_string new_string, item
-                    _insert_token result, identifier
-                else match id, identifier
-                    display "ID = ", `id, $0A
-                    match =end?, id
-                    else match =else?, id
-                    else
-                        if (definite identifier) & (identifier eqtype "")
-                            add_entry = $01
-                            _eval_string new_string, identifier
-                        end if
-                    end match
-                    match,new_string
-                        _insert_token result, identifier
-                    end match
+        else
+            define stream result
+        end if
+
+        match =result?, stream
+            add_entry = $00
+            new_string equ
+            if (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
+                _eval_string new_string, item
+                _insert_token result, identifier
+                add_entry = $01
+            else match id, identifier
+                match =end?, id
+                else match =else?, id
+                else
+                    if (definite identifier) & (identifier eqtype "")
+                        _eval_string new_string, identifier
+                        add_entry = $01
+                    end if
                 end match
-                if (add_entry)
-                    _add_constant_pool pool_entry, string, new_string
-                    expand_item equ pool_entry
-                end if
-                identifier equ
+                match,new_string
+                    wrap_item equ identifier
+                end match
+            end match
+            if (add_entry)
+                _add_constant_pool pool_entry, new_string
+                wrap_item equ pool_entry
             end if
+            if (~(end_item))
+                match _, identifier
+                    _insert_token wrap_item, item
+                end match
+            end if
+            identifier equ
         end match
-        match _, pointer
-            _insert_token _, expand_item
+        match _, stream
+            _insert_token _, wrap_item
         end match
     end irps
 end macro
@@ -208,9 +213,9 @@ macro _expand_single_line_macro? result?*, line?*&
                     else
                         if (return eqtype "")
                             _eval_string new_string, return
-                            _add_constant_pool pool_entry, string, new_string
+                            _add_constant_pool pool_entry, new_string
                         else
-                            _add_constant_pool pool_entry, float, return
+                            _add_constant_pool pool_entry, return
                         end if
                         _insert_token insret, pool_entry
                     end if
@@ -254,8 +259,7 @@ end macro
 
 macro _preprocess_line? result?*, line?*&
     result equ line
-    iterate invoke, _subround_string,\ ;_eval_each_string,
-                    _expand_single_line_macro
+    iterate invoke, _subround_string, _eval_each_string, _expand_single_line_macro
         match _, result
             invoke result, _
         end match
@@ -272,7 +276,7 @@ macro _catch_line?!
                 _preprocess_line expand_line, line
                 match _, expand_line
                     ; _catch_symbols
-                    display "NEW LINE = ", `_, $0A
+                    ;display "NEW LINE = ", `_, $0A
                     _
                     ; end _catch_symbols
                 end match
@@ -284,3 +288,4 @@ end macro
 macro end?._catch_line?!
     purge ?
 end macro
+

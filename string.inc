@@ -1,11 +1,11 @@
 
 macro _iterate_string?! parameter?*, text?*
     local char, start, iterator
-    must_string (text)
+    _assert_string (text)
     start = $00
     iterator equ parameter
     match it =: begin, parameter
-        must_numeric (begin)
+        _assert_numeric (begin)
         start = begin
         iterator equ it
     end match
@@ -22,15 +22,15 @@ macro end?._iterate_string?!
 end macro
 
 macro _append_string? dst?*, src?*&
-    must_string (dst)
+    _assert_string (dst)
     iterate value, src
-        must_string (value)
+        _assert_string (value)
         dst = string (((value) shl ($08 * lengthof (dst))) or (dst))
     end iterate
 end macro
 
 macro _check_identifier? result?*, identifier?*
-    must_string (identifier)
+    _assert_string (identifier)
     result = $01
     if (~(lengthof (identifier)))
         result = $00
@@ -48,8 +48,8 @@ end macro
 
 macro _ensure_identifier? identifier?*&
     local check
-    iterate ident, identifier
-        _check_identifier check, ident
+    iterate id, identifier
+        _check_identifier check, identifier
         if (~(check))
             if (~(lengthof (identifier)))
                 err "syntax error: empty identifier"
@@ -64,7 +64,7 @@ macro _itoa_base? base?*, dst?*, src?
     match _, src
         dst = (src)
     end match
-    must_numeric (base), (dst)
+    _assert_numeric (base), (dst)
     if ((base <= $01) | (base > $10))
         err "base too small or to large"
     else if (~(definite __hex_digit))
@@ -84,7 +84,7 @@ end macro
 
 macro _eval_string? result?*, text?*
     local escape, lbrace, subname
-    must_string (text)
+    _assert_string (text)
     escape = $00
     lbrace = $00
     result = ""

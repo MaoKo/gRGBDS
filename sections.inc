@@ -136,16 +136,8 @@ macro _catch_sections?
 end macro
 
 macro end?._catch_sections?
-    purge db?,dw?,dl?,\
-          section?
-    namespace _sections?
-        repeat _total
-            restore _name?, _kind?, _org?, _bank?,\
-                    _align?, _patchs?, _area?
-        end repeat
-        _current_section = NULL
-        _total = $00
-    end namespace
+    purge db?,dw?,dl?, section?
+    _sections?._current_section = _sections.NULL
     iterate disable, dd,dp,dq,dt,ddq,dqq,ddqq,\
                      rb,rw,rd,rp,rq,rt,rdq,rqq,rdqq
         purge   disable?
