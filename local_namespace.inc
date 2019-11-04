@@ -73,6 +73,7 @@ macro _local_namespace?! prefixs?, instructions?, labeleds?, expressions?
     namespace base_space
 end macro
 
+; Example
 ;_local_namespace <,__>, <display,match>,,
 ;    __match _, 1
 ;        __display `_, $0A

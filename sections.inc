@@ -97,20 +97,20 @@ macro _catch_sections?
                         space::
                         _area?  equ space
                     end virtual
-                    match _, directive_link
+                    match _, directive_link ; preserve original context
                         iterate directive, _
                             purge directive?
                             if ((kind relativeto _sections.ROM0)\
                               | (kind relativeto _sections.ROMX))
                                 macro directive? line?*&
+                                    ; TODO handle rpn
                                     virtual space
                                         directive line
                                     end virtual
                                 end macro
                             else
                                 macro directive? line?*&
-                                    err "Section '", name,\
-                                        "' cannot contain code or data (nor ROM0 or ROMX)"
+                                    err "Section '", name, "' cannot contain code or data (nor ROM0 or ROMX)"
                                 end macro
                             end if
                         end iterate

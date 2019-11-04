@@ -11,19 +11,14 @@ end namespace
 
 macro _insert_token? dst?*, src?&
     local prefix, suffix, empty
+    define  dst ; force variable
+    restore dst
     prefix equ "dst reequ "
     suffix equ ""
     empty  equ
-    define  dst ; force variable
-    restore dst
-    match value, dst
-        if ((`value) <> (`dst))
-            suffix equ (`value)
-            match value2= , dst
-                suffix equ suffix, " "
-            end match
-        end if
-    end match
+    iirpv value, LAST, dst
+        suffix equ (`value)
+    end iirpv
     match value, src
         suffix equ suffix, (`value)
         match value2= , src
@@ -66,6 +61,61 @@ macro _add_constant_pool? result?*, value?*
     end match
 end macro
 
+macro _replace_bracket_operator? result?*, line?*&
+    local wrap_item, stream, empty, link, operator, _shl,_shr,_gt,_ge,_lt,_le
+    result   equ
+    empty    equ
+    operator equ
+    _shl equ <<
+    _shr equ >>
+    _gt  equ  >
+    _ge  equ >=
+    _lt  equ  <
+    _le  equ <=
+    define stream result
+    irps item[+space], line empty ; when '<' or '>' reach the end
+        wrap_item equ item
+        match =result?, stream
+            match =<, item 
+                define stream operator
+            else match =>, item
+                define stream operator
+            end match
+        else
+            match =< =>, operator wrap_item
+                wrap_item equ gt
+            else match => =<, operator wrap_item
+                wrap_item equ lt
+            end match
+            match not_empty _, item wrap_item
+                irps lookahead, <=>
+                    match =_, lookahead
+                        _insert_token operator, _
+                        wrap_item equ
+                        break
+                    end match
+                end irps
+            end match
+            match bracket, operator
+                iterate kind, shl,shr,gt,ge,lt,le
+                    eval "link equ _", (`kind)
+                    match =bracket, link
+                        _insert_token result, ; ensure correct spacing
+                        wrap_item equ kind wrap_item
+                        break
+                    end match
+                end iterate
+            end match
+            operator equ
+            define stream result
+        end match
+        match _, stream
+            _insert_token _, wrap_item
+        end match
+    end irps
+end macro
+
+; TODO: HANDLE MORE LITERAL (BINARY, OCTAL, AND MAYBE GAMEBOY GRAPHICS)
 macro _subround_string? result?*, line?*&
     local lbrace, follow, identifier, prev_space
     result equ
@@ -259,7 +309,8 @@ end macro
 
 macro _preprocess_line? result?*, line?*&
     result equ line
-    iterate invoke, _subround_string, _eval_each_string, _expand_single_line_macro
+    iterate invoke, _replace_bracket_operator, _subround_string,\
+                    _eval_each_string, _expand_single_line_macro
         match _, result
             invoke result, _
         end match
@@ -269,19 +320,25 @@ end macro
 macro _catch_line?!
     macro ?! line&
         local expand_line
-        match ln, line
+        match not_empty, line
             match macro_name =: =macro?, line
                 err "not implemented yet"
             else
                 _preprocess_line expand_line, line
                 match _, expand_line
                     ; _catch_symbols
-                    ;display "NEW LINE = ", `_, $0A
-                    _
+                    ;invoker
+                    ;macro invoker?!
+                        ;invoker
+                        ;purge invoker?
+                        display "NEW LINE = ", (`_), $0A
+                        _
+                    ;end macro
                     ; end _catch_symbols
                 end match
             end match
         end match
+        ;invoker
     end macro
 end macro
 

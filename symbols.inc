@@ -1,16 +1,23 @@
 
 _symbols? := $00
 namespace _symbols?
-    _total?  = $00
+    element _symbols_type?
     ?LOCAL? := $00
     IMPORT? := $01
     EXPORT? := $02
+    iterate <symbol,value>, add,$00, sub,$01, mul,$02, div,$03, mod,$04, unary_minus,$05,\
+                            or,$10, and,$11, xor,$12, unary_negate,$13, logical_and,$21, logical_or,$22,\
+                            unary_not,$23, equal,$30, not_equal,$31, great,$32, less,$33, great_equal,$34,\
+                            less_equal,$35, shl,$40, shr,$41
+        _rpn_#symbol? := value
+    end iterate
+    _total?  = $00
 end namespace
 
 macro _catch_symbols?!
     local last_name
     last_name equ
-    struc (name?) ?! line&
+    struc (name?) ?! line?&
         local label, type, found, remain, dots, local_name, full_name, full_used
         label = $01
         type = _symbols.LOCAL
@@ -62,14 +69,14 @@ macro _catch_symbols?!
             full_used = $00
             match scope? . local?, last_name . local_name
                 namespace scope
-                    element #local : _symbols._total
+                    element #local : _symbols._symbols_type + _symbols._total
                     if (used #local)
                         full_used = $01
                     end if
                 end namespace
                 eval "full_name equ ", (`scope), ".", (`local)
             end match
-            element name : _symbols._total
+            element name : _symbols._symbols_type + _symbols._total
             if (used name) | (full_used)
                 namespace _symbols?
                     match _, full_name
@@ -83,6 +90,7 @@ macro _catch_symbols?!
                     _total?     =  _total + $01
                 end namespace
             end if
+            ; TODO 
             ;match _, remain
             ;    _
             ;end match
