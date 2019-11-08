@@ -1,7 +1,11 @@
 
-_cpu_z80? := $00
-namespace _cpu_z80?
-    element _register_type?
+_cpu_gbz80? := $00
+namespace _cpu_gbz80?
+    element _register_type_r08?
+    ;element _register_type_r16? TODO
+    iterate <type,value>, A,$07, B,$00, C,$01, D,$02, E,$03, H,$04, L,$05, _Mem_HL,$06
+        element type : _register_type_r08 + value
+    end iterate
 end namespace
 
 macro nop?

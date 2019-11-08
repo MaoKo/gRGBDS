@@ -7,10 +7,7 @@ macro _pairing? list?*&
     end iterate
 end macro
 
-;irps value[+space|+ident], a . f
-;end irps
-
-macro _fasmg_identifier? result?*, token?
+macro _fasmg_identifier? result?*, token?&
     local string_token
     string_token = (`token)
     result = $01
@@ -69,7 +66,7 @@ macro _core_irps? parameter?*, text?&
     while $01
         if (next_space)
             next_space = $00
-            token equ
+            token1 equ
         else
             match _ remain, buffer
                 if (inc_space)
@@ -81,7 +78,7 @@ macro _core_irps? parameter?*, text?&
                 match remain2= , buffer
                     end_space = $01
                 end match
-                token  equ _
+                token1 equ _
                 buffer equ remain
                 if (end_space)
                     buffer equ buffer empty
@@ -92,7 +89,7 @@ macro _core_irps? parameter?*, text?&
                         next_space = $01
                     end match
                 end if
-                token  equ _
+                token1 equ _
                 buffer equ
             else
                 break
@@ -103,31 +100,30 @@ macro _core_irps? parameter?*, text?&
     if (inc_ident)
         identifier equ
         last_dot = $00
-        irpv item, token
+        irpv item, token1
             _fasmg_identifier valid_id, item
             if (valid_id) 
-                match,identifier
-                    identifier equ item
-                else if (`item = ".") | (last_dot)
+                if ((`item) = ".") | (last_dot)
                     _insert_token identifier, item
                     if ((`item) = ".")
                         last_dot = $01
                     end if
+                else match,identifier
+                    identifier equ item
                 else
                     token2 equ identifier
                     identifier equ item
-                end if
+                end match
             else
-                match _1 =| _2, identifier | item
+                match _, identifier
                     token2 equ identifier
                     token2 equ item
                     identifier equ
-                else match _ =|, identifier | item
                 else
                     token2 equ item
                 end match
             end if
-            if ((`item) <> "") & ((`item) <> ".")
+            if ((`item) <> ".")
                 last_dot = $00
             end if
         end irpv

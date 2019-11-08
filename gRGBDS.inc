@@ -2,13 +2,13 @@
 include "irps.inc"
 include "switch.inc"
 
-include "assert_type.inc"
+include "assert.inc"
+
 include "fixed_point.inc"
 include "string_function.inc"
 
-include "macro_builder.inc"
-
 include "string.inc"
+include "macro_builder.inc"
 
 include "sections.inc"
 include "symbols.inc"

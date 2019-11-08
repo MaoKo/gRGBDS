@@ -16,12 +16,14 @@
 ;    %
 ;end irpv
 
-include "assert_type.inc"
+include "assert.inc"
 include "string.inc"
 include "irps.inc"
 include "preprocessor.inc"
 
-empty equ 
-irps a[+ident|+space], a..b.e+ e . l .@ =
-    display `a, $0A
-end irps
+_replace_symbols_operator result, 1 =! 3
+match _, result
+_
+end match
+
+

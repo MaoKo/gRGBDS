@@ -61,45 +61,95 @@ macro _add_constant_pool? result?*, value?*
     end match
 end macro
 
-macro _replace_bracket_operator? result?*, line?*&
-    local wrap_item, stream, empty, link, operator, _shl,_shr,_gt,_ge,_lt,_le
-    result   equ
-    empty    equ
+macro _replace_symbols_operator? result?*, line?*&
+    local wrap_item, stream, empty, link, operator, _mod,_shl,_shr,_gt,_ge,_lt,_le
+    result equ
+    _mod            equ  %
+    _or             equ  |
+    _logical_or     equ ||
+    _and            equ  &
+    _logical_and    equ &&
+    _eq             equ ==
+    _not            equ  !
+    _ne             equ !=
+    _shl            equ <<
+    _shr            equ >>
+    _gt             equ  >
+    _ge             equ >=
+    _lt             equ  <
+    _le             equ <=
     operator equ
-    _shl equ <<
-    _shr equ >>
-    _gt  equ  >
-    _ge  equ >=
-    _lt  equ  <
-    _le  equ <=
+    empty equ
     define stream result
-    irps item[+space], line empty ; when '<' or '>' reach the end
+    irps item[+space|+ident], line empty ; when '<' or '>' reach the end
         wrap_item equ item
         match =result?, stream
             match =<, item 
                 define stream operator
             else match =>, item
                 define stream operator
+            else match =|, item
+                define stream operator
+            else match =&, item
+                define stream operator
+            else match ==, item
+                define stream operator
+            else match =!, item
+                define stream operator
+            else match =+, item
+                wrap_item equ add
+                ; HANDLE UNARY
+            else match =-, item
+                wrap_item equ sub
+                ; HANDLE UNARY
+            else match =*, item
+                wrap_item equ mul
+            else match =^, item
+                wrap_item equ xor
+            else match =~, item
+                wrap_item equ neg
+            else match _, _mod
+                ; TODO EXPAND IN LOOP
+                match =_, item
+                    wrap_item equ mod
+                end match
             end match
         else
-            match =< =>, operator wrap_item
-                wrap_item equ gt
-            else match => =<, operator wrap_item
-                wrap_item equ lt
+            macro _add_operator_token? token?*
+                _insert_token operator, =token
+                wrap_item equ
+            end macro
+            match =| =|, operator wrap_item
+                _add_operator_token |
+            else match =& =&, operator wrap_item
+                _add_operator_token &
+            else match == ==, operator wrap_item
+                _add_operator_token =
+            else match =! ==, operator wrap_item
+                _add_operator_token =
+            else
+                match =< =>, operator wrap_item
+                    wrap_item equ gt
+                else match => =<, operator wrap_item
+                    wrap_item equ lt
+                end match
+                match _ not_empty, wrap_item item
+                    irps lookahead, <=>
+                        match =_, lookahead
+                            _add_operator_token _
+                            break
+                        end match
+                    end irps
+                end match
             end match
-            match not_empty _, item wrap_item
-                irps lookahead, <=>
-                    match =_, lookahead
-                        _insert_token operator, _
-                        wrap_item equ
-                        break
-                    end match
-                end irps
-            end match
-            match bracket, operator
-                iterate kind, shl,shr,gt,ge,lt,le
+            purge _add_operator_token?
+            ; TODO HANDLE '='
+            match ==, operator ; lone '='
+                wrap_item equ = wrap_item
+            else match _, operator
+                iterate kind, or,logical_or,and,logical_and,eq,not,ne,shl,shr,gt,ge,lt,le
                     eval "link equ _", (`kind)
-                    match =bracket, link
+                    match =_, link
                         _insert_token result, ; ensure correct spacing
                         wrap_item equ kind wrap_item
                         break
@@ -160,49 +210,32 @@ macro _subround_string? result?*, line?*&
 end macro
 
 macro _eval_each_string? result?*, line?*&
-    local check, stream, identifier, empty, new_string, pool_entry, add_entry, wrap_item
-    result     equ
-    identifier equ
-    empty      equ
-    define stream result
-    irps item[+space], line empty
+    local check, new_string, pool_entry, add_entry, wrap_item
+    result equ
+    irps item[+space|+ident], line
         wrap_item equ item
-        _check_identifier check, (`item)
-        if (check) | ((`item) = '.')
-            define stream identifier
-        else
-            define stream result
+        _fasmg_identifier check, item
+        if (check) | (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
             add_entry = $00
-            new_string equ
             if (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
                 _eval_string new_string, item
-                _insert_token result, identifier
                 add_entry = $01
-            else match id, identifier
-                match =end?, id
-                else match =else?, id
+            else
+                match =end?, item
+                else match =else?, item
                 else
-                    if (definite identifier) & (identifier eqtype "")
-                        _eval_string new_string, identifier
+                    if (definite item) & (item eqtype "")
+                        _eval_string new_string, item
                         add_entry = $01
                     end if
                 end match
-                match,new_string
-                    wrap_item equ identifier
-                end match
-            end match
+            end if
             if (add_entry)
                 _add_constant_pool pool_entry, new_string
                 wrap_item equ pool_entry
             end if
-            match _, identifier
-                _insert_token wrap_item, item
-            end match
-            identifier equ
         end if
-        match _, stream
-            _insert_token _, wrap_item
-        end match
+        _insert_token result, wrap_item
     end irps
 end macro
 
@@ -297,7 +330,7 @@ end macro
 
 macro _preprocess_line? result?*, line?*&
     result equ line
-    iterate invoke, _replace_bracket_operator, _subround_string,\
+    iterate invoke, _replace_symbols_operator, _subround_string,\
                     _eval_each_string, _expand_single_line_macro
         match _, result
             invoke result, _
