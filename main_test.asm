@@ -20,10 +20,9 @@ include "assert.inc"
 include "string.inc"
 include "irps.inc"
 include "preprocessor.inc"
+include "rpn.inc"
 
-_replace_symbols_operator result, 1 =! 3
+_rpn_generator result, __unary_add 4 __sub 5
 match _, result
-_
+    _
 end match
-
-

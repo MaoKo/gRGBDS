@@ -147,18 +147,6 @@ macro end?._catch_sections?
     end iterate
 end macro
 
-; Shunting-Yard Algorithm
-macro _rpn_expression? offset?*, expression?*, kind?*
-    local output_queue, operator_stack
-    irps item[+space|+ident], expression
-        match =(, item
-        else match =), item
-        else
-            ; TODO
-        end match
-    end irps
-end macro
-
 macro pushs?
     err "not yet implemented"
 end macro

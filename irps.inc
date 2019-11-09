@@ -178,3 +178,11 @@ macro end?.iirpv?!
         end match
     end iterate
 end macro
+
+macro reverse?
+    indx ((%% - %) + $01)
+end macro
+
+macro forward?
+    indx (%)
+end macro

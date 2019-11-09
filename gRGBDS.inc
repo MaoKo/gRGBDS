@@ -9,6 +9,7 @@ include "string_function.inc"
 
 include "string.inc"
 include "macro_builder.inc"
+include "rpn.inc"
 
 include "sections.inc"
 include "symbols.inc"
