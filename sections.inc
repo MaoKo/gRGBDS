@@ -1,15 +1,70 @@
 
 _sections? := $00
 namespace _sections?
+    _LIMIT_OPTION :=  $02
+    _NULL_SECTION := -$01
     element _section_type?
     iterate <type,value>, ROM0, $03, ROMX, $02, VRAM,$01, SRAM,$05,\
                           WRAM0,$00, WRAMX,$05,  OAM,$07, HRAM,$04
         element type : _section_type + value
     end iterate
-    NULL := -$01
-    _current_section? = NULL
+    _current_section? = _NULL_SECTION
     _total? = $00
+    _patchs? := $00
+    namespace _patchs?
+        _BYTE?    := $00
+        _WORD?    := $01
+        _LONG?    := $02
+        _JR_BYTE? := $03
+        iterate <symbol,value>,           __add,$00,         __sub,$01,         __mul,$02,\
+                                          __div,$03,         __mod,$04, __unary_minus,$05,\
+                                           __or,$10,         __and,$11,         __xor,$12,\
+                                 __unary_negate,$13, __logical_and,$21,  __logical_or,$22,\
+                                    __unary_not,$23,          __eq,$30,          __ne,$31,\
+                                           __gt,$32,          __lt,$33,          __ge,$34,\
+                                           __le,$35,         __shl,$40,         __shr,$41
+            symbol? := value
+        end iterate
+        _LONG_INT? := $80
+        _LONG_SYM? := $81
+    end namespace
 end namespace
+
+macro _request_patch? result?*, expression?*, kind?*
+    local space, offset, rpn_size, rpn_data
+    result equ space
+    offset = ($ - $$)
+    virtual at $00
+        space::
+        db __file__, $00
+        dd __line__
+        dd offset
+        db _sections._patchs.kind
+        dd rpn_size
+        virtual at $00
+            irps item[+ident], expression
+                if (defined _sections._patchs.item) ; may be a problem here
+                    db _sections._patchs.item
+                else
+                    if (elementsof (item))
+                        db _sections._patchs._LONG_SYM
+                        if (_symbols._symbols_type relativeto (item metadata $01))
+                            dd ((item metadata $01) scale $00)
+                        else
+                            err "syntax error: '", (`item), "' is not an label."
+                        end if
+                    else
+                        db _sections._patchs._LONG_INT
+                        dd item
+                    end if
+                end if
+            end irps
+            load rpn_data : $ from $$
+        end virtual
+        rpn_size := (lengthof (rpn_data))
+        db rpn_data
+    end virtual
+end macro
 
 macro _catch_sections?
     local directive_link
@@ -46,7 +101,7 @@ macro _catch_sections?
         if ((kind) metadata $01 relativeto _sections._section_type)\
          & ((kind)  element $01 eq (kind))
             iterate option, options
-                if (%% > $02)
+                if (%% > _sections._LIMIT_OPTION)
                     err "invalid operand: too many section options"
                 end if
                 iterate option_kind, align,bank
@@ -87,27 +142,38 @@ macro _catch_sections?
 
             if (~(found))
                 namespace _sections?
-                    _name?      =: name
-                    _kind?      =: kind
-                    _org?       =: org
-                    _bank?      =: bank
-                    _align?     =: align
-                    ;virtual at $00
-                    _patchs?    =: $00
-                    ;end virtual
+                    _name?         =: name
+                    _kind?         =: kind
+                    _org?          =: org
+                    _bank?         =: bank
+                    _align?        =: align
+                    _patchs        equ
+                    _area?         equ space
                     virtual at $00
                         space::
-                        _area?  equ space
                     end virtual
                     match _, directive_link ; preserve original context
                         iterate directive, _
                             purge directive?
-                            if ((kind relativeto _sections.ROM0)\
-                              | (kind relativeto _sections.ROMX))
+                            if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
                                 macro directive? line?*&
-                                    ; TODO handle rpn
+                                    local rpn_expression, rpn_result, polynomial, patch_space
+                                    _rpn_builder rpn_expression, polynomial, line
+                                    if (polynomial) ; if polynomial are present let the linker do the computation
+                                        ;_request_patch patch_space, rpn_expression, ???
+                                        namespace _section?
+                                            match,_patchs
+                                                _patchs reequ patch_space
+                                            else
+                                                _patchs reequ _patchs, patch_space
+                                            end match
+                                        end namespace
+                                        rpn_result = $00
+                                    else
+                                        _rpn_evaluator rpn_result, rpn_expression
+                                    end if
                                     virtual space
-                                        directive line
+                                        directive rpn_result
                                     end virtual
                                 end macro
                             else
@@ -139,7 +205,7 @@ end macro
 
 macro end?._catch_sections?
     purge db?,dw?,dl?, section?
-    _sections?._current_section = _sections.NULL
+    _sections?._current_section = _sections._NULL_SECTION
     iterate disable, dd,dp,dq,dt,ddq,dqq,ddqq,\
                      rb,rw,rd,rp,rq,rt,rdq,rqq,rdqq
         purge   disable?

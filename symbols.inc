@@ -1,16 +1,10 @@
 
 _symbols? := $00
 namespace _symbols?
-    element _symbols_type?
     ?LOCAL? := $00
     IMPORT? := $01
     EXPORT? := $02
-    iterate <symbol,value>, add,$00, sub,$01, mul,$02, div,$03, mod,$04, unary_minus,$05,\
-                            or,$10, and,$11, xor,$12, unary_negate,$13, logical_and,$21, logical_or,$22,\
-                            unary_not,$23, equal,$30, not_equal,$31, great,$32, less,$33, great_equal,$34,\
-                            less_equal,$35, shl,$40, shr,$41
-        _rpn_#symbol? := value
-    end iterate
+    element _symbols_type?
     _total?  = $00
 end namespace
 
@@ -80,14 +74,14 @@ macro _catch_symbols?!
             if (used name) | (full_used)
                 namespace _symbols?
                     match _, full_name
-                        _name   =: _
+                        _name    =: _
                     end match
-                    _type?      =: type
-                    _filename?  =: __file__
-                    _linenum?   =: __line__
-                    _sectionid? =: _sections._current_section
-                    _value?     =: ($$ - $)
-                    _total?     =  _total + $01
+                    _type?       =: type
+                    _filename?   =: __file__
+                    _line_num?   =: __line__
+                    _section_id? =: _sections._current_section
+                    _value?      =: ($$ - $)
+                    _total?      =  _total + $01
                 end namespace
             end if
             ; TODO 
@@ -102,4 +96,10 @@ end macro
 
 macro end?._catch_symbols?!
     restruc ?
+end macro
+
+macro export? names?*&
+end macro
+
+macro global? names?*&
 end macro
