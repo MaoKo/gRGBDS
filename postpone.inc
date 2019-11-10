@@ -73,5 +73,5 @@ end macro
 postpone ?
 ;    end _catch_line
 ;    end _catch_sections
-    rgbds_format
+    _rgbds_format
 end postpone
