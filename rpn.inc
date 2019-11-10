@@ -29,14 +29,14 @@ macro _rpn_builder? result?*, polynomial?*, expression?*&
     result equ
     empty  equ
     polynomial = $00
-    macro _enqueue_operator? operator?*
-        match =__unary_add?, operator
+    macro enqueue_operator? operator?*
+        match =__unary_add?, operator ; __unary_add get vanish during this step
             _insert_token result, $00 __add empty
         else
             _insert_token result, operator empty
         end match
     end macro
-    irps item[+ident], ( expression ) ; avoid the need to pop-off all the stack 'stack'
+    irps item[+ident], ( expression ) ; avoid the need to pop-off all the stack operator
         match =(, item
             stack equ (
         else match =), item
@@ -48,7 +48,7 @@ macro _rpn_builder? result?*, polynomial?*, expression?*&
                     present = $00
                     break
                 end match
-                _enqueue_operator operator
+                enqueue_operator operator
             end irpv
             if (present)
                 err "syntax error: missing left parenthesis"
@@ -71,7 +71,7 @@ macro _rpn_builder? result?*, polynomial?*, expression?*&
                         end if
                     end match
                     restore stack
-                    _enqueue_operator operator
+                    enqueue_operator operator
                 end irpv
                 stack equ item
             else
@@ -82,11 +82,11 @@ macro _rpn_builder? result?*, polynomial?*, expression?*&
             end if
         end match
     end irps
-    purge _enqueue_operator?
+    purge enqueue_operator?
 end macro
 
 macro _rpn_evaluator? result?*, expression?*
-    local stack, relational, operand_1, operand_2, result
+    local stack, relational, relational_equ, operand_1, operand_2
     irps item[+ident], expression
         if (defined _rpn_symbols.item)
             operand_1 = stack
@@ -100,20 +100,30 @@ macro _rpn_evaluator? result?*, expression?*
             else match =__unary_not, item
                 result = (not operand_1)
             else
-                relational = $00
+                relational = $01
                 operand_2  = stack
                 restore stack
-                iterate <operator,builtin>   __mul,*, __div,/, __mod,mod,\
-                                           __and,and, __or,or, __xor,xor,\
-                                             __add,+, __sub,-
+                iterate <operator,builtin>,  __mul,*,   __div,/,  __mod,mod,\
+                                             __shl,shl, __shr,shr,\
+                                             __and,and,  __or,or, __xor,xor,\
+                                             __add,+,   __sub,-
                     match =operator?, item
                         result = (operand_1) builtin (operand_2)
-                        relational = $01
+                        relational = $00
                         break
                     end match
                 end iterate
                 if (relational)
-                    ; TODO
+                    result = $00
+                    iterate <operator,builtin>, __gt,">", __ge,">=", __lt,"<", __le,"<=",\
+                                                __eq,"=", __ne,"<>", __logical_and,"&", __logical_or,"|"
+                        eval "relational_equ equ ", builtin
+                        match =operator? _, item relational_equ
+                            if ((operand_1) _ (operand_2))
+                                result = $01
+                            end if
+                        end match
+                    end iterate
                 end if
             end match
             irpv value, result

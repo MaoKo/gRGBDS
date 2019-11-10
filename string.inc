@@ -29,36 +29,6 @@ macro _append_string? dst?*, src?*&
     end iterate
 end macro
 
-macro _check_identifier? result?*, identifier?*
-    _assert_string (identifier)
-    result = $01
-    if (~(lengthof (identifier)))
-        result = $00
-    else
-        _iterate_string char, identifier
-            if (~ (((char >= 'a') & (char <= 'z'))\
-                 | ((char >= 'A') & (char <= 'Z'))\
-                 |  (char = '_')))
-                result = $00
-                break
-            end if
-        end _iterate_string
-    end if
-end macro
-
-macro _ensure_identifier? identifier?*&
-    local check
-    iterate id, identifier
-        _check_identifier check, identifier
-        if (~(check))
-            if (~(lengthof (identifier)))
-                err "syntax error: empty identifier"
-            end if
-            err "syntax error: bad identifier"
-        end if
-    end iterate
-end macro
-
 macro _itoa_base? base?*, dst?*, src?
     local quotien, cbyte
     match _, src
@@ -112,7 +82,7 @@ macro _eval_string? result?*, text?*
                 _append_string subname, char
             else
                 lbrace = $00
-                _ensure_identifier subname
+                _assert_fasmg_identifier subname
                 eval "subname = ", subname
                 if (subname eqtype $00) | (subname eqtype 0.0)
                     if (subname eqtype 0.0)
@@ -132,10 +102,10 @@ macro _eval_string? result?*, text?*
             _append_string result, char
         end if
     end _iterate_string
-    iterate <condition,error>,  escape,"A backslash '\' can't end a string",\
-                                lbrace,"Right brace '}' missing"
+    iterate <condition,error>,  escape,"a backslash '\' can't end a string",\
+                                lbrace,"right brace '}' missing"
         if (condition)
-            err error
+            err "syntax error: ", error
         end if
     end iterate
 end macro

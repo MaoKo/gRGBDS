@@ -62,7 +62,7 @@ macro _add_constant_pool? result?*, value?*
 end macro
 
 macro _replace_symbols_operator? result?*, line?*&
-    local wrap_item, stream, empty, link, operator, unary,  bracket,    mod,or,logical_or,and,logical_and,\
+    local wrap_item, stream, empty, link, operator, unary, bracket,      mod,or,logical_or,and,logical_and,\
                                                                         eq,unary_not,ne,shl,shr,gt,ge,lt,le
     result equ
     mod         equ  % ; <TODO> HANDLE IN LOOP
@@ -167,8 +167,8 @@ macro _replace_symbols_operator? result?*, line?*&
                 wrap_item equ __xor
             else match =~, wrap_item
                 wrap_item equ __unary_neg
-            else match _, mod
-                ; <TODO>
+;            else match _, mod
+; <TODO>: Handle % operator
             else match =(, wrap_item ; preserve unary
             else match =), wrap_item
             else

@@ -67,9 +67,6 @@ macro _request_patch? result?*, expression?*, kind?*
 end macro
 
 macro _catch_sections?
-    local directive_link
-    directive_link equ db,dw,dl
-
     iterate disable, dd,dp,dq,dt,ddq,dqq,ddqq,\
                      rb,rw,rd,rp,rq,rt,rdq,rqq,rdqq
         iterate kind, macro,struc
@@ -86,13 +83,13 @@ macro _catch_sections?
     end iterate
 
     macro section? name?*, type?*, options?&
-        local kind, org, bank, align, found, space
-        must_string (name)
+        local kind, org, bank, align, present, space
+        _assert_string (name)
         align = -$01
         bank = -$01
         org = -$01
         match _ =[ base =], type
-            must_numeric_unsigned (base)
+            _assert_numeric_unsigned (base)
             org  = base
             kind = _sections._
         else match _, type
@@ -106,7 +103,7 @@ macro _catch_sections?
                 end if
                 iterate option_kind, align,bank
                     match =option_kind? =[ value =], option
-                        must_numeric_unsigned (value)
+                        _assert_numeric_unsigned (value)
                         if (option_kind <> -$01)
                             err "syntax error: option redefinition"
                         end if
@@ -132,15 +129,18 @@ macro _catch_sections?
                 end if
             end if
 
-            found = $00
+            present = $00
             irpv it, _sections?._name
                 if (name = it)
-                    found = %
+                    present = %
                     break
                 end if
             end irpv
 
-            if (~(found))
+            if (~(present))
+                virtual at $00 ; create a new virtual area for the section
+                    space::
+                end virtual
                 namespace _sections?
                     _name?         =: name
                     _kind?         =: kind
@@ -149,48 +149,43 @@ macro _catch_sections?
                     _align?        =: align
                     _patchs        equ
                     _area?         equ space
-                    virtual at $00
-                        space::
-                    end virtual
-                    match _, directive_link ; preserve original context
-                        iterate directive, _
-                            purge directive?
-                            if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
-                                macro directive? line?*&
-                                    local rpn_expression, rpn_result, polynomial, patch_space
-                                    _rpn_builder rpn_expression, polynomial, line
-                                    if (polynomial) ; if polynomial are present let the linker do the computation
-                                        ;_request_patch patch_space, rpn_expression, ???
-                                        namespace _section?
-                                            match,_patchs
-                                                _patchs reequ patch_space
-                                            else
-                                                _patchs reequ _patchs, patch_space
-                                            end match
-                                        end namespace
-                                        rpn_result = $00
-                                    else
-                                        _rpn_evaluator rpn_result, rpn_expression
-                                    end if
-                                    virtual space
-                                        directive rpn_result
-                                    end virtual
-                                end macro
-                            else
-                                macro directive? line?*&
-                                    err "Section '", name, "' cannot contain code or data (nor ROM0 or ROMX)"
-                                end macro
-                            end if
-                        end iterate
-                    end match
                     _total? = _total + $01
                     _current_section? = _total
                 end namespace
+                iterate <directive,type>, db,_BYTE, dw,_WORD, dl,_LONG
+                    purge directive?
+                    if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
+                        macro directive? line?*&
+                            local rpn_expression, rpn_result, polynomial, patch_space
+                            _rpn_builder rpn_expression, polynomial, line
+                            if (polynomial) ; if polynomial are present let the linker do the computation
+                                _request_patch patch_space, rpn_expression, _sections._patchs.type
+                                namespace _section?
+                                    match,_patchs
+                                        _patchs reequ patch_space
+                                    else
+                                        _patchs reequ _patchs, patch_space
+                                    end match
+                                end namespace
+                                rpn_result = $00
+                            else
+                                _rpn_evaluator rpn_result, rpn_expression
+                            end if
+                            virtual _sections._area
+                                directive rpn_result
+                            end virtual
+                        end macro
+                    else
+                        macro directive? line?*&
+                            err "Section '", name, "' cannot contain code or data (nor ROM0 or ROMX)"
+                        end macro
+                    end if
+                end iterate
                 section org
             else
-                _sections._current_section = found
+                _sections._current_section = present
                 iterate attr, kind,org,bank,align
-                    iirpv it, found, section?._#attr
+                    iirpv it, present, section?._#attr
                         if (~(attr relativeto it)) | (attr <> it)
                             err "Section exists but with a different type"
                         end if
