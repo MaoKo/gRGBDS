@@ -4,6 +4,7 @@ namespace _sections?
     _LIMIT_OPTION :=  $02
     _NULL_SECTION := -$01
     element _section_type?
+    element _undefined_field?
     iterate <type,value>, ROM0, $03, ROMX, $02, VRAM,$01, SRAM,$05,\
                           WRAM0,$00, WRAMX,$05,  OAM,$07, HRAM,$04
         element type : _section_type + value
@@ -83,7 +84,7 @@ macro _catch_sections?
     end iterate
 
     macro section? name?*, type?*, options?&
-        local kind, org, bank, align, present, space
+        local kind, org, bank, align, present, space, contain_data
         _assert_string (name)
         align = -$01
         bank = -$01
@@ -138,6 +139,10 @@ macro _catch_sections?
             end irpv
 
             if (~(present))
+                contain_data = $00
+                if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
+                    contain_data = $01
+                end if
                 virtual at $00 ; create a new virtual area for the section
                     space::
                 end virtual
@@ -147,14 +152,21 @@ macro _catch_sections?
                     _org?          =: org
                     _bank?         =: bank
                     _align?        =: align
-                    _patchs        equ
-                    _area?         equ space
+                    if (contain_data)
+                        _count_patchs?  =: $00
+                        _patchs?       equ
+                        _area?         equ space
+                    else
+                        _count_patchs?  =: _undefined_field
+                        _patchs?       equ _undefined_field
+                        _area?         equ _undefined_field
+                    end if
                     _total? = _total + $01
                     _current_section? = _total
                 end namespace
                 iterate <directive,type>, db,_BYTE, dw,_WORD, dl,_LONG
                     purge directive?
-                    if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
+                    if (contain_data)
                         macro directive? line?*&
                             local rpn_expression, rpn_result, polynomial, patch_space
                             _rpn_builder rpn_expression, polynomial, line
@@ -166,6 +178,7 @@ macro _catch_sections?
                                     else
                                         _patchs reequ _patchs, patch_space
                                     end match
+                                    _count_patchs = _count_patchs + $01
                                 end namespace
                                 rpn_result = $00
                             else

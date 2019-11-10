@@ -21,5 +21,5 @@ include "prints.inc"
 
 include "postpone.inc"
 
-_catch_sections
-_catch_line
+;_catch_sections
+;_catch_line

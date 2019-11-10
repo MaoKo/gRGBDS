@@ -5,6 +5,7 @@ namespace _symbols?
     IMPORT? := $01
     EXPORT? := $02
     element _symbols_type?
+    element _undefined_field?
     _total?  = $00
 end namespace
 
@@ -72,17 +73,23 @@ macro _catch_symbols?!
             end match
             element name : _symbols._symbols_type + _symbols._total
             if (used name) | (full_used)
-                namespace _symbols?
-                    match _, full_name
-                        _name    =: _
-                    end match
-                    _type?       =: type
-                    _filename?   =: __file__
-                    _line_num?   =: __line__
-                    _section_id? =: _sections._current_section
-                    _value?      =: ($$ - $)
-                    _total?      =  _total + $01
-                end namespace
+                match _full_name, full_name
+                    namespace _symbols?
+                        _name?   =: _full_name
+                        _type?   =: type
+                        if (_type <> _symbols.IMPORT)
+                            _filename?   =: __file__
+                            _line_num?   =: __line__
+                            _section_id? =: _sections._current_section
+                            _value?      =: ($$ - $)
+                        else
+                            iterate field, filename,line_num,section_id,value
+                                _#field? =: _undefined_field
+                            end iterate
+                        end if
+                        _total?  =  _total + $01
+                    end namespace
+                end match
             end if
             ; TODO 
             ;match _, remain

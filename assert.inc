@@ -29,9 +29,9 @@ iterate <type,value>, string,"", numeric,$00, float,0.0f
 end iterate
 
 macro _assert_fasmg_identifier? token?    
-    local result
-    _fasmg_identifier result, token
-    if (~(result))
+    local valid
+    _fasmg_identifier valid, token
+    if (~(valid))
         err "The token '", (`token) "' is not a valid identifier"
     end if
 end macro
