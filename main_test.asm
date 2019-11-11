@@ -1,7 +1,6 @@
 
 include "gRGBDS.inc"
 
-_replace_symbols_operator result, 1 * / 0 + 2
-match _, result
-_
-end match
+repeat $500, i:$00
+    section (`i), ROM0
+end repeat

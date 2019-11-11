@@ -72,13 +72,13 @@ macro _replace_symbols_operator? result?*, line?*&
     irps item[+space|+ident], line empty ; when '<' or '>' reach the end
         wrap_item equ item
         match =operator?, stream ; operator of more than 1 token
-            match _, operator
+            match _1 _2, operator item ; ensure item is empty
                 iterate <part_1,part_2>, "|","|", "&","&", "=","=", "!","=",\
                                          "<","<", "<","=", ">",">", ">","="
                     eval "part_1_equ equ ", part_1
                     eval "part_2_equ equ ", part_2
-                    match _ item, part_1 part_2
-                        _insert_token operator, =item
+                    match =_1 =_2, part_1_equ part_2_equ
+                        _insert_token operator, =_2
                         wrap_item equ
                         break
                     end match
@@ -93,7 +93,7 @@ macro _replace_symbols_operator? result?*, line?*&
                                         __lt,"<",          __le,"<=",\
                                  __unary_not,"!"
                     eval "operator_equ equ ", shape
-                    match _, operator_equ
+                    match =_, operator_equ
                         _insert_token result, ; ensure correct spacing
                         _insert_token result, kind empty
                         break
@@ -107,7 +107,7 @@ macro _replace_symbols_operator? result?*, line?*&
             operator equ
             define stream result
         end match
-        match _, wrap_item
+        match not_empty, wrap_item
             operand = $00
             iterate complex_operator, "<",">","|","&","=","!"
                 eval "complex_equ equ ", complex_operator
@@ -152,10 +152,11 @@ macro _replace_symbols_operator? result?*, line?*&
             if (~(operand))
                 unary = $01
             end if
-            match =_, item ; add space around replaced operator
-            else
-                _insert_token result,
-                _insert_token wrap_item,
+            match _, wrap_item
+                if ((`_) <> (`item)) ; add space around replaced operator
+                    _insert_token result,
+                    _insert_token wrap_item,
+                end if
             end match
         end match
         match _, stream

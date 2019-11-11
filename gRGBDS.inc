@@ -2,6 +2,7 @@
 include "irps.inc"
 include "switch.inc"
 
+include "misc.inc"
 include "assert.inc"
 
 include "fixed_point.inc"
@@ -21,5 +22,5 @@ include "prints.inc"
 
 include "postpone.inc"
 
-;_catch_sections
+_handle_defined_data
 ;_catch_line

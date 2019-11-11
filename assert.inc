@@ -35,3 +35,9 @@ macro _assert_fasmg_identifier? token?
         err "The token '", (`token) "' is not a valid identifier"
     end if
 end macro
+
+macro _assert_defined_field? namespace?*, field?*
+    if (elementsof (field)) & (field relativeto namespace._undefined_field)
+        err "syntax error: field '", (`field), "' have an undefined value"
+    end if
+end macro
