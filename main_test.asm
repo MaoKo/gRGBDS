@@ -1,6 +1,7 @@
 
 include "gRGBDS.inc"
 
-repeat $500, i:$00
-    section (`i), ROM0
+section "A", ROM0
+repeat $6000
+    db $00
 end repeat

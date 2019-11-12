@@ -7,8 +7,12 @@ namespace _symbols?
     element _symbols_type?
     element _undefined_field?
     _total?  = $00
+    _user_symbols? := $00
+    namespace _user_symbols?
+    end namespace
 end namespace
 
+; TODO: element @ : _symbols._symbols_type
 macro _catch_symbols?!
     local last_name
     last_name equ

@@ -2,7 +2,6 @@
 include "irps.inc"
 include "switch.inc"
 
-include "misc.inc"
 include "assert.inc"
 
 include "fixed_point.inc"

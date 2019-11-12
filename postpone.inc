@@ -32,8 +32,8 @@ macro _rgbds_format?
 
     db rgbds_magic
     dd _symbols._total
-    dd _sections._section_counter
-    repeat _symbols._total, i:$00
+    dd _sections._sections_counter
+;    repeat _symbols._total, i:$00
 ;        iirpv type, i, _symbols._type
 ;            not_import_label = $00
 ;            if (type <> _symbols.IMPORT)
@@ -45,32 +45,32 @@ macro _rgbds_format?
 ;            _record_fields _symbols, i, scalar, db,filename, dd,line_num,\
 ;                                                dd,_section_id, dd,value,
 ;        end if
-    end repeat
-    match list, _sections._user_sections_list
-        iterate user_section, list
+;    end repeat
+    if (_sections._sections_counter)
+        irpv user_section, _sections._user_sections_list
             db string (user_section), $00
             namespace _sections._user_sections._#user_section?
-                db _org
+                db _start
                 db _bank
                 db _align
-;                if (???)
-;                    virtual _area
-;                        load virtual_data : $ from $$
-;                    end virtual
-;                    db virtual_data
-;                    db _count_patchs
-;                    iterate patch, _patchs
-;                        virtual patch
-;                            load virtual_data : $ from $$
-;                        end virtual
-;                        db virtual_data
-;                    end iterate
-;                end if
+                if (__native)
+                    virtual _area
+                        load virtual_data : $ from $$
+                    end virtual
+                    db virtual_data
+                    db _count_patchs
+                    irpv patch, _patchs
+                        virtual patch
+                            load virtual_data : $ from $$
+                        end virtual
+                        db virtual_data
+                    end irpv
+                end if
             end namespace
-        end iterate
-    end match
+        end irpv
+    end if
 
-    repeat _sections._section_counter
+;    repeat _sections._section_counter
         ;iirpv kind, %, _sections._kind
         ;    section_contain_data = $00
         ;    if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
@@ -87,7 +87,7 @@ macro _rgbds_format?
         ;    _record_fields _sections, %, scalar, <db,_count_patchs>
         ;    _record_fields _sections, %, composite, patchs
         ;end if
-    end repeat
+;    end repeat
 end macro
 
 postpone ?

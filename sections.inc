@@ -1,18 +1,14 @@
 
 _sections? := $00
 namespace _sections?
-    _LIMIT_OPTION :=  $02
-    _NULL_SECTION := -$01
-    ;_MIN_BANK_NUM := $000
-    ;_MAX_BANK_NUM := $1FF
+    _LIMIT_OPTION? :=  $02
+    _NULL_SECTION? := -$01
     element _section_type?
     iterate <type,value>, ROM0, $03, ROMX, $02, VRAM,$01, SRAM,$05,\
                           WRAM0,$00, WRAMX,$05,  OAM,$07, HRAM,$04
         element type : _section_type + value
     end iterate
-    _current_section? = _NULL_SECTION
-    _section_counter? = $00
-    _patchs_builder? := $00
+    _patchs_builder?  := $00
     namespace _patchs_builder?
         _BYTE?    := $00
         _WORD?    := $01
@@ -33,6 +29,8 @@ namespace _sections?
     _user_sections? := $00 ; user defined section
     namespace _user_sections?
     end namespace
+    _current_section?  reequ _NULL_SECTION
+    _sections_counter? = $00
 end namespace
 
 macro _request_patch? result?*, expression?*, kind?*
@@ -80,15 +78,37 @@ macro _handle_defined_data?
             end kind
         end iterate
     end iterate
-    iterate directive, db,dw,dl
+    iterate <directive,type>, db,_BYTE, dw,_WORD, dl,_LONG
         macro directive? line?*&
-            err "program error: code generation before SECTION directive"
+            local rpn_expression, rpn_result, polynomial, patch_space
+            if (_sections._current_section = _sections._NULL_SECTION)
+                err "program error: code generation before SECTION directive"
+            end if
+            match user_section, _sections._current_section
+                namespace _sections._user_sections._#user_section?
+                    if (~(__native))
+                        err "program error: section '", name, "' cannot contain code or data (nor ROM0 or ROMX)"
+                    end if
+                    _rpn_builder rpn_expression, polynomial, line
+                    ;if (polynomial) ; if polynomial are present let the linker do the computation
+                    ;    _request_patch patch_space, rpn_expression, _sections._patchs.type
+                    ;    _patchs equ patch_space
+                    ;    _count_patchs? = _count_patchs + $01
+                    ;    rpn_result = $00
+                    ;else
+                    ;    _rpn_evaluator rpn_result, rpn_expression
+                    ;end if
+                    virtual _area
+                        directive line ; rpn_result
+                    end virtual
+                end namespace
+            end match
         end macro
     end iterate
 end macro
 
 macro end?._handle_defined_data?
-    _sections?._current_section = _sections._NULL_SECTION
+    _sections?._current_section? reequ _sections._NULL_SECTION
     purge db?,dw?,dl?
     iterate disable, dd,dp,dq,dt,ddq,dqq,ddqq,\
                      rb,rw,rd,rp,rq,rt,rdq,rqq,rdqq
@@ -98,17 +118,17 @@ macro end?._handle_defined_data?
 end macro
 
 macro section? name?*, type?*, options?&
-   local kind, org, bank, align, present, space, contain_data
+   local kind, bank, start, align, space
     _assert_string (name)
-    align = -$01
-    bank = -$01
-    org = -$01
+    align   = -$01
+    bank    = -$01
+    start   = -$01
     match _ =[ base =], type
         _assert_numeric_unsigned (base)
-        org  = base
-        kind = _sections._
+        start  = base
+        kind   = _sections._
     else match _, type
-        kind = _sections._
+        kind   = _sections._
     end match
     if ((kind) metadata $01 relativeto _sections._section_type) & ((kind)  element $01 eq (kind))
         iterate option, options
@@ -126,7 +146,7 @@ macro section? name?*, type?*, options?&
             end iterate
         end iterate
         if (align <> -$01)
-            if (org <> -$01)
+            if (start <> -$01)
                 err "invalid operand: align can't be specified with address"
             else if (align < $00) | (align > $10)
                 err "invalid operand: align must fit between $00-$10" 
@@ -143,70 +163,40 @@ macro section? name?*, type?*, options?&
         end if
 
         repeat $01, i:name
-            if (~(definite _sections._user_sections._#i)) ; check if present
-                contain_data = $00
-                if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
-                    contain_data = $01
-                end if
-                ;virtual at $00 ; create a new virtual area for the section
-                ;    space::
-                ;end virtual
+            if (~(definite _sections._user_sections._#i)) ; check if already exist
                 namespace _sections?
                     namespace _user_sections?
                         _#i? := name
                         namespace _#i?
-                            _kind?  := kind
-                            _org?   := org
-                            _bank?  := bank
-                            _align? := align
-                            if (contain_data)
+                            __index?    := _sections_counter
+                            __native?    = $00
+                            _kind?      := kind
+                            _start?     := start
+                            _bank?      := bank
+                            _align?     := align
+                            if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
+                                virtual at $00 ; create a new virtual area for the section
+                                    space::
+                                end virtual
+                                __native?       =  $01
                                 _count_patchs?  =: $00
-                                _patchs?       equ
                                 _area?         equ space
                             end if
                         end namespace
                     end namespace
-                    _section_counter? = _section_counter + $01
-                    _current_section? = _section_counter
-                    _append_list _user_sections_list?, i
+                    _sections_counter? = _sections_counter + $01
+                    _user_sections_list? =: i
                 end namespace
-                iterate <directive,type>, db,_BYTE, dw,_WORD, dl,_LONG
-                    purge directive?
-                    if (contain_data)
-                        macro directive? line?*&
-                            local rpn_expression, rpn_result, polynomial, patch_space
-                            _rpn_builder rpn_expression, polynomial, line
-                            if (polynomial) ; if polynomial are present let the linker do the computation
-                                _request_patch patch_space, rpn_expression, _sections._patchs.type
-                                namespace _section?._user_sections?._#i?
-                                    _append_list _patchs, patch_space
-                                    _count_patchs? = _count_patchs + $01
-                                end namespace
-                                rpn_result = $00
-                            else
-                                _rpn_evaluator rpn_result, rpn_expression
-                            end if
-                            virtual _sections._area
-                                directive rpn_result
-                            end virtual
-                        end macro
-                    else
-                        macro directive? line?*&
-                            err "program error: section '", name, "' cannot contain code or data (nor ROM0 or ROMX)"
-                        end macro
-                    end if
-                end iterate
-                section org
             else
-                ;_sections._current_section = present
-                ;iterate attr, kind,org,bank,align
-                ;    iirpv it, present, section?._#attr
-                ;        if (~(attr relativeto it)) | (attr <> it)
-                ;            err "program error: section exists but with a different type"
-                ;        end if
-                ;    end iirpv
-                ;end iterate
+                namespace _sections?._user_sections?._#i?
+                    iterate field, kind,start,bank,align
+                        if (~(field relativeto _#field)) | (field <> _#field)
+                            err "program error: section exist but with a different type"
+                        end if
+                    end iterate
+                end namespace
             end if
+            _sections._current_section? reequ i
         end repeat
     else
         err "syntax error: section type unknown"

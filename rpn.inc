@@ -29,60 +29,61 @@ macro _rpn_builder? result?*, polynomial?*, expression?*&
     result equ
     empty  equ
     polynomial = $00
-    macro enqueue_operator? operator?*
-        match =__unary_add?, operator ; __unary_add get vanish during this step
-            _insert_token result, $00 __add empty
-        else
-            _insert_token result, operator empty
-        end match
-    end macro
+    ;macro enqueue_operator? operator?*
+    ;    match =__unary_add?, operator ; __unary_add get vanish during this step
+    ;        _insert_token result, $00 __add empty
+    ;    else
+    ;        _insert_token result, operator empty
+    ;    end match
+    ;end macro
     irps item[+ident], ( expression ) ; avoid the need to pop-off all the stack operator
-        match =(, item
-            stack equ (
-        else match =), item
-            present = $01
-            irpv operator, stack
-                reverse
-                restore stack
-                match =operator, (
-                    present = $00
-                    break
-                end match
-                enqueue_operator operator
-            end irpv
-            if (present)
-                err "syntax error: missing left parenthesis"
-            end if
-        else
-            if (defined _rpn_symbols.item)
-                irpv operator, stack
-                    reverse
-                    match =(, operator
-                        break
-                    else
-                        if (_rpn_symbols.operator._precedence > _rpn_symbols.item._precedence)
-                            break
-                        else if (_rpn_symbols.operator._precedence = _rpn_symbols.item._precedence)
-                            if (_rpn_symbols.operator._associativity = NASSOC)
-                                err "syntax error: operator '", `operator, "' is not-associative"
-                            else if (_rpn_symbols.operator._associativity = LASSOC))
-                                break
-                            end if
-                        end if
-                    end match
-                    restore stack
-                    enqueue_operator operator
-                end irpv
-                stack equ item
-            else
-                if (elementsof (item))
-                    polynomial = $01
-                end if
-                _insert_token result, item empty
-            end if
-        end match
+        ;match =(, item
+        ;    stack equ (
+        ;else match =), item
+        ;    present = $01
+        ;    irpv operator, stack
+        ;        reverse
+        ;        restore stack
+        ;        match =operator, (
+        ;            present = $00
+        ;            break
+        ;        end match
+        ;        enqueue_operator operator
+        ;    end irpv
+        ;    if (present)
+        ;        err "syntax error: missing left parenthesis"
+        ;    end if
+        ;else
+            ;if (definite _rpn_symbols.item)
+            ;    irpv operator, stack
+            ;        reverse
+            ;        match =(, operator
+            ;            break
+            ;        else
+            ;            if (_rpn_symbols.operator._precedence > _rpn_symbols.item._precedence)
+            ;                break
+            ;            else if (_rpn_symbols.operator._precedence = _rpn_symbols.item._precedence)
+            ;                if (_rpn_symbols.operator._associativity = NASSOC)
+            ;                    err "syntax error: operator '", `operator, "' is not-associative"
+            ;                else if (_rpn_symbols.operator._associativity = LASSOC))
+            ;                    break
+            ;                end if
+            ;            end if
+            ;        end match
+            ;        restore stack
+            ;        enqueue_operator operator
+            ;    end irpv
+            ;    stack equ item
+            ;else
+                ;if (elementsof (item))
+                ;    polynomial = $01
+                ;end if
+                result equ item
+                ;_insert_token result, item empty
+            ;end if
+        ;end match
     end irps
-    purge enqueue_operator?
+    ;purge enqueue_operator?
 end macro
 
 macro _rpn_evaluator? result?*, expression?*

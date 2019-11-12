@@ -8,6 +8,31 @@ namespace _cpu_gbz80?
     end iterate
 end namespace
 
+macro _bound_limit? value?*, bitness?*, kind?
+    local slimit, ulimit
+    _assert_numeric (value)
+    if (elementsof (value))
+        err "invalid operand: linear polynomial cannot be part of immediate"
+    end if
+    ulimit := ($01 shl bitness)
+    slimit := ($01 shl (bitness - $01))
+    match =SIGNED?, kind
+        if (((value) >= slimit) | ((value) < (-slimit)))
+            err "invalid operand: immediate value not fit in signed range"
+        end if
+    else match =UNSIGNED?, kind
+        if (((value) < $00) | ((value) >= _ulimit))
+            err "invalid operand: immediate value not fit in unsigned range"
+        end if
+    else match,kind
+        if (((value) < (-_slimit)) | ((value) >= _ulimit))
+            err "invalid operand: immediate value not fit properly" ; change error message later
+        end if
+    else
+        err "invalid operand: operand must be either SIGNED or UNSIGNED"
+    end match
+end macro
+
 macro nop?
     db 00000000b
 end macro
