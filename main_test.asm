@@ -1,7 +1,13 @@
 
-include "gRGBDS.inc"
+;include "gRGBDS.inc"
 
-section "A", ROM0
-repeat $6000
-    db $00
+include "pairing.inc"
+include "irps.inc"
+include "string.inc"
+include "assert.inc"
+include "preprocessor.inc"
+
+repeat $10000
+    irps abc[+ident], A B C
+    end irps
 end repeat

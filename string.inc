@@ -1,24 +1,39 @@
 
-macro _iterate_string?! parameter?*, text?*
-    local char, start, iterator
+macro _core_iterate_string? parameter?*, text?*
+    local start, iterator
     _assert_string (text)
     start = $00
     iterator equ parameter
-    match it =: begin, parameter
+    match _ =: begin, parameter
         _assert_numeric (begin)
         start = begin
-        iterator equ it
+        iterator equ _
     end match
-    repeat (lengthof (text) - start), i:(start)
-        char =: string (((text) shr ($08 * i)) and $FF)
-    end repeat
-    match it, iterator
-        outscope irpv it, char
+    repeat $01, text_number:text
+        if (~(definite ?text_number))
+            ?text_number := $00
+            namespace ?text_number
+                repeat (lengthof (text) - start), i:(start)
+                    node =: (((text_number) shr ($08 * i)) and $FF)
+                end repeat
+            end namespace
+        end if
+        match _, iterator
+            outscope irpv _, ?text_number.node
+end macro
+
+macro _iterate_string?! line?*&
+    _pairing repeat, match, irpv
+    repeat
+    match
+    irpv
+    outscope _core_iterate_string line
 end macro
 
 macro end?._iterate_string?!
-        end irpv
-    end match
+            end irpv
+        end match
+    end repeat
 end macro
 
 macro _append_string? dst?*, src?*&
@@ -39,14 +54,14 @@ macro _itoa_base? base?*, dst?*, src?
         err "base too small or to large"
     else if (~(definite __hex_digit))
         virtual at $00
-            __hex_digit::
+            __hexadecimal_digit::
             emit $01: "0123456789ABCDEF"
         end virtual
     end if
     quotien = dst
     dst = ""
     while (quotien)
-        load cbyte : byte from __hex_digit : (quotien mod base)
+        load cbyte : byte from __hexadecimal_digit : (quotien mod base)
         quotien = (quotien / base)
         dst  = string ((dst shl $08) + cbyte)
     end while

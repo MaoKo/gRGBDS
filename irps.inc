@@ -1,38 +1,41 @@
 
-macro _pairing? list?*&
-    iterate name, list
-        macro name?
-            purge name?
-        end macro
-    end iterate
-end macro
+_fasmg_letter_identifier? := $00
+namespace _fasmg_letter_identifier?
+    repeat $100, i:$00
+        ?i = $01
+        if (i <> "$") & (i <> "%") & (i <> ".") & ((i < "0") | (i > "9"))\
+         & (i <> "@") & ((i < "A") | (i > "Z")) & (i <> "^") & (i <> "_")\
+         & ((i < "a") | (i > "z"))
+            ?i = $00
+        end if
+    end repeat
+end namespace
 
 macro _fasmg_identifier? result?*, token?&
     local string_token
     string_token = (`token)
-    result = $01
-    if ((string_token and $FF) >= "0") & ((string_token and $FF) <= "9")
-        result = $00
-    else if (string_token = "")
-        result = $00
-    else if  ((string_token and $FF) = "$")
-        string_token = string (string_token shr $08)
-        iterate <lbound,ubound>, "0","9", "A","Z", "a","z"
-            if ((string_token and $FF) >= lbound) & ((string_token and $FF) <= ubound)
-                result = $00
-                break
-            end if
-        end iterate
-    end if
-    if (result)
-        _iterate_string char, string_token
-            if (char <> "$") & (char <> "%") & (char <> ".") & ((char < "0") | (char > "9"))\
-             & (char <> "@") & ((char < "A") | (char > "Z")) & (char <> "^") & (char <> "_")\
-             & ((char < "a") | (char > "z"))
-                result = $00
-                break
-            end if
-        end _iterate_string
+    result = $00
+    if (string_token <> "")
+        result = $01
+        if ((string_token and $FF) >= "0") & ((string_token and $FF) <= "9") ; 
+            result = $00
+        else if  ((string_token and $FF) = "$")
+            string_token = string (string_token shr $08)
+            iterate <lbound,ubound>, "0","9", "A","Z", "a","z"
+                if ((string_token and $FF) >= lbound) & ((string_token and $FF) <= ubound)
+                    result = $00
+                    break
+                end if
+            end iterate
+        end if
+        if (result)
+            _iterate_string char, string_token
+                if (~(_fasmg_letter_identifier.char))
+                    result = $00
+                    break
+                end if
+            end _iterate_string
+        end if
     end if
 end macro
 
@@ -117,11 +120,9 @@ macro _core_irps? parameter?*, text?&
             else
                 match _, identifier
                     token2 equ identifier
-                    token2 equ item
                     identifier equ
-                else
-                    token2 equ item
                 end match
+                token2 equ item
             end if
             if ((`item) <> ".")
                 last_dot = $00
