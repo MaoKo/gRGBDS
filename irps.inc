@@ -1,52 +1,11 @@
 
-_fasmg_letter_identifier? := $00
-namespace _fasmg_letter_identifier?
-    repeat $100, i:$00
-        ?i = $01
-        if (i <> "$") & (i <> "%") & (i <> ".") & ((i < "0") | (i > "9"))\
-         & (i <> "@") & ((i < "A") | (i > "Z")) & (i <> "^") & (i <> "_")\
-         & ((i < "a") | (i > "z"))
-            ?i = $00
-        end if
-    end repeat
-end namespace
-
-macro _fasmg_identifier? result?*, token?&
-    local string_token
-    string_token = (`token)
-    result = $00
-    if (string_token <> "")
-        result = $01
-        if ((string_token and $FF) >= "0") & ((string_token and $FF) <= "9") ; 
-            result = $00
-        else if  ((string_token and $FF) = "$")
-            string_token = string (string_token shr $08)
-            iterate <lbound,ubound>, "0","9", "A","Z", "a","z"
-                if ((string_token and $FF) >= lbound) & ((string_token and $FF) <= ubound)
-                    result = $00
-                    break
-                end if
-            end iterate
-        end if
-        if (result)
-            _iterate_string char, string_token
-                if (~(_fasmg_letter_identifier.char))
-                    result = $00
-                    break
-                end if
-            end _iterate_string
-        end if
-    end if
-end macro
-
 macro _core_irps? parameter?*, text?&
-    local   iterator, stream, inc_space, inc_ident, next_space, end_space,\
-            identifier, valid_id, last_dot, buffer, token1, token2, empty
-    iterator equ parameter
+    local   iterator, stream, inc_space, inc_ident, identifier, valid_id, last_dot, buffer, token1, token2
+    define iterator parameter
     inc_space = $00
     inc_ident = $00
     match it=[ options =], parameter
-        iterator equ it
+        define iterator it
         match =+ option_1 =| =+ option_2, options
             match =space? =ident?, option_1 option_2
             else match =ident? =space?, option_1 option_2
@@ -63,73 +22,58 @@ macro _core_irps? parameter?*, text?&
             err "syntax error: bad irps option"
         end match
     end match
-    next_space = $00
-    buffer equ text
-    empty  equ
+    buffer equ text ; expands all symbolic variable once
     while $01
-        if (next_space)
-            next_space = $00
-            token1 equ
-        else
-            match _ remain, buffer
-                if (inc_space)
-                    match =_= remain2, buffer
-                        next_space = $01
-                    end match
-                end if
-                end_space = $00
-                match remain2= , buffer
-                    end_space = $01
+        match _ remain, buffer
+            define token1 _
+            if (inc_space)
+                match =_= insert_space, buffer
+                    define token1
                 end match
-                token1 equ _
-                buffer equ remain
-                if (end_space)
-                    buffer equ buffer empty
-                end if
-            else match _, buffer
-                if (inc_space)
-                    match =_= , buffer
-                        next_space = $01
-                    end match
-                end if
-                token1 equ _
-                buffer equ
-            else
-                break
+            end if
+            define buffer remain
+        else 
+            match _, buffer
+                define token1 _
             end match
-        end if
+            break
+        end match
     end while
+    if (inc_space)
+        match _= , text
+            define token1
+        end match
+    end if
     define stream token1
     if (inc_ident)
-        identifier equ
+        define identifier
         last_dot = $00
         irpv item, token1
-            _fasmg_identifier valid_id, item
+            ;_fasmg_identifier valid_id, `item
+            valid_id = $01
             if (valid_id) 
-                if ((`item) = ".") | (last_dot)
-                    _insert_token identifier, item
-                    if ((`item) = ".")
-                        last_dot = $01
-                    end if
-                else match,identifier
-                    identifier equ item
-                else
-                    token2 equ identifier
-                    identifier equ item
-                end match
+                ;if ((`item) = ".") | (last_dot)
+                ;    _insert_token identifier, item
+                ;    if ((`item) = ".")
+                ;        last_dot = $01
+                ;    end if
+                ;else match _, identifier
+                ;    define token2 identifier
+                ;end match
+                define identifier item
             else
                 match _, identifier
-                    token2 equ identifier
-                    identifier equ
+                    define token2 identifier
+                    define identifier
                 end match
-                token2 equ item
+                define token2 item
             end if
-            if ((`item) <> ".")
-                last_dot = $00
-            end if
+            ;if (last_dot) & ((`item) <> ".")
+            ;    last_dot = $00
+            ;end if
         end irpv
         match _, identifier
-            token2 equ identifier
+            define token2 identifier
         end match
         define stream token2
     end if

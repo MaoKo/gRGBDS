@@ -61,6 +61,15 @@ macro halt?
     db 01110110b
 end macro
 
+macro rst? vector?*
+    local expression, absolute
+    _rpn_builder expression, absolute, vector
+    if (absolute)
+        err "invalid operand: address for RST must be absolute"
+    end if
+    _rpn_evaluator expression, expression
+end macro
+
 macro ret?
     db 11001001b
 end macro
