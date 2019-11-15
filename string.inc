@@ -11,7 +11,7 @@ macro _core_iterate_string? parameter?*, text?*
     rawmatch _ =: begin, parameter
         _assert_numeric (begin)
         start = begin
-        define iterator  _
+        redefine iterator  _
     end rawmatch
     repeat $01, text_number:text
         namespace _iterate_string_symbols_table?

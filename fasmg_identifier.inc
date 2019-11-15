@@ -17,20 +17,22 @@ end namespace
 macro _fasmg_identifier? result?*, token?&
     _assert_string (token)
     namespace _fasmg_identifier_symbols_table?
-        repeat $01, string_token:(token)
-            if (definite ?string_token?)
-                result = ?string_token?
+        repeat $01, identifier:(token)
+            if (definite ?identifier?)
+                result = ?identifier?
                 break
             end if
-            if (string_token <> "")
+            match =0, identifier
+                result = $00
+            else
                 result = $01
-                if ((string_token and $FF) >= "0") & ((string_token and $FF) <= "9")
+                if ((identifier and $FF) >= "0") & ((identifier and $FF) <= "9")
                     result = $00
                     break
-                else if  ((string_token and $FF) = "$")
-                    repeat $01, string_token_2:(string_token shr $08)
+                else if  ((identifier and $FF) = "$")
+                    repeat $01, identifier_2:(identifier shr $08)
                         iterate <lbound,ubound>, "0","9", "A","Z", "a","z"
-                            if ((string_token_2 and $FF) >= lbound) & ((string_token_2 and $FF) <= ubound)
+                            if ((identifier_2 and $FF) >= lbound) & ((identifier_2 and $FF) <= ubound)
                                 result = $00
                                 break
                             end if
@@ -38,19 +40,18 @@ macro _fasmg_identifier? result?*, token?&
                     end repeat
                 end if
                 if (result)
-                    _iterate_string char, string (string_token)
+                    _iterate_string char, string (identifier)
                         if (~(?char?))
                             result = $00
                             break
                         end if
                     end _iterate_string
                 end if
-            else
-                result = $00
-            end if
-            define  ?string_token?
-            restore ?string_token?
-            ?string_token? = result
+            end match
+            define  ?identifier?
+            restore ?identifier?
+            ?identifier? = result
         end repeat
     end namespace
 end macro
+

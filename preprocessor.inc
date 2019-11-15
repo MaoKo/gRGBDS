@@ -9,27 +9,6 @@ namespace _constant_pool?
     end iterate
 end namespace
 
-macro _insert_token? dst?*, src?&
-    local prefix, suffix, empty
-    define  dst ; force variable
-    restore dst
-    prefix equ "dst reequ "
-    suffix equ ""
-    empty  equ
-    iirpv value, LAST, dst
-        suffix equ (`value)
-    end iirpv
-    match value, src
-        suffix equ suffix, (`value)
-        match value2= , src
-            suffix equ suffix, (" empty")
-        end match
-    else
-        suffix equ suffix, (" empty")
-    end match
-    eval prefix, suffix
-end macro
-
 macro _add_constant_pool? result?*, value?*
     local type, found
     result equ _constant_pool._
@@ -61,107 +40,155 @@ macro _add_constant_pool? result?*, value?*
     end match
 end macro
 
+_symbols_operator_namespace? := $00
+namespace _symbols_operator_namespace?
+    _one_symbols_operator? := $00
+    namespace _one_symbols_operator? 
+        _unary_symbols := $00
+        iterate <cop*,sub*,unary>,  "+", __add, __unary_add,\
+                                    "-", __sub, __unary_sub,\
+                                    "*", __mul,,            \
+                                    "/", __div,,            \
+                                    "^", __xor,,            \
+                                    "~", __unary_neg,,      \
+                                    "%", __mod,
+            repeat $01, i:cop
+                ?i? = (`sub)
+                rawmatch _, unary
+                    namespace _unary_symbols?
+                        ?i? = (`unary)
+                    end namespace
+                end rawmatch
+            end repeat
+        end iterate
+    end namespace
+    _two_symbols_operator? := $00
+    namespace _two_symbols_operator?
+        iterate begin, "<",">","|","&","=","!"
+            repeat $01, i:begin
+                ?i? = $01
+            end repeat
+        end iterate
+    end namespace
+end namespace
+
 __MODULUS equ % ; ensure to not expand even when in loop
 macro _replace_symbols_operator? result?*, line?*&
     local wrap_item, stream, empty, operator, operand, unary, complex_equ, part_1_equ, part_2_equ, operator_equ
-    result   equ
-    operator equ
-    empty    equ
+    define result
+    define operator
+    define empty
     unary  = $01
     define stream result
     irps item[+space|+ident], line empty ; when '<' or '>' reach the end
-        wrap_item equ item
-        match =operator?, stream ; operator of more than 1 token
-            match _1 _2, operator item ; ensure item is empty
-                iterate <part_1,part_2>, "|","|", "&","&", "=","=", "!","=",\
-                                         "<","<", "<","=", ">",">", ">","="
-                    eval "part_1_equ equ ", part_1
-                    eval "part_2_equ equ ", part_2
-                    match =_1 =_2, part_1_equ part_2_equ
-                        _insert_token operator, =_2
-                        wrap_item equ
-                        break
-                    end match
-                end iterate
-            end match
-            match _, operator
-                iterate <kind,shape>,   __or,"|",  __logical_or,"||",\
-                                       __and,"&", __logical_and,"&&",\
-                                       __eq,"==",          __ne,"!=",\
-                                      __shl,"<<",         __shr,">>",\
-                                        __gt,">",          __ge,">=",\
-                                        __lt,"<",          __le,"<=",\
-                                 __unary_not,"!"
-                    eval "operator_equ equ ", shape
-                    match =_, operator_equ
-                        _insert_token result, ; ensure correct spacing
-                        _insert_token result, kind empty
-                        break
-                    end match
-                    operator_equ equ
-                end iterate
-            end match
-            match,operator_equ
-                _insert_token result, operator
-            end match
-            operator equ
-            define stream result
-        end match
-        match not_empty, wrap_item
-            operand = $00
-            iterate complex_operator, "<",">","|","&","=","!"
-                eval "complex_equ equ ", complex_operator
-                match =item, complex_equ
-                    define stream operator
-                    break
-                end match
-                complex_equ equ
-            end iterate
-            match,complex_equ
-                match =+, item
-                    wrap_item equ __add
-                    if (unary)
-                        wrap_item equ __unary_add
-                    end if
-                else match =-, item
-                    wrap_item equ __sub
-                    if (unary)
-                        wrap_item equ __unary_sub
-                    end if
-                else match =*, item
-                    wrap_item equ __mul
-                else match =/, item
-                    wrap_item equ __div
-                else match =^, item
-                    wrap_item equ __xor
-                else match =~, item
-                    wrap_item equ __unary_neg
-                else match =(, item ; preserve unary
-                else match =), item ; preserve unary
-                else
-                    match mod_token, __MODULUS
-                        match =mod_token, item
-                            wrap_item equ __mod
-                        else
-                            operand = $01
-                            unary = $00
-                        end match
-                    end match
-                end match
-            end match
-            if (~(operand))
-                unary = $01
-            end if
-            match _, wrap_item
-                if ((`_) <> (`item)) ; add space around replaced operator
-                    _insert_token result,
-                    _insert_token wrap_item,
-                end if
-            end match
-        end match
-        match _, stream
-            _insert_token _, wrap_item
-        end match
+ ;       define wrap_item item
+        ;match =operator?, stream ; operator of more than 1 token
+        ;    match _1 _2, operator item ; ensure item is empty
+        ;        iterate <part_1,part_2>, "|","|", "&","&", "=","=", "!","=",\
+        ;                                 "<","<", "<","=", ">",">", ">","="
+        ;            eval "part_1_equ equ ", part_1
+        ;            eval "part_2_equ equ ", part_2
+        ;            match =_1 =_2, part_1_equ part_2_equ
+        ;                _insert_token operator, =_2
+        ;                wrap_item equ
+        ;                break
+        ;            end match
+        ;        end iterate
+        ;    end match
+        ;    match _, operator
+        ;        iterate <kind,shape>,   __or,"|",  __logical_or,"||",\
+        ;                               __and,"&", __logical_and,"&&",\
+        ;                               __eq,"==",          __ne,"!=",\
+        ;                              __shl,"<<",         __shr,">>",\
+        ;                                __gt,">",          __ge,">=",\
+        ;                                __lt,"<",          __le,"<=",\
+        ;                         __unary_not,"!"
+        ;            eval "operator_equ equ ", shape
+        ;            match =_, operator_equ
+        ;                _insert_token result, ; ensure correct spacing
+        ;                _insert_token result, kind empty
+        ;                break
+        ;            end match
+        ;            define operator_equ
+        ;        end iterate
+        ;    end match
+        ;    match,operator_equ
+        ;        _insert_token result, operator
+        ;    end match
+        ;    define operator
+        ;    define stream result
+        ;end match
+        ;namespace _symbols_operator_namespace?
+        ;    repeat $01, symbol:(`item)
+        ;        unary = $01
+        ;        if (definite _two_symbols_operator?.symbol?)
+        ;            define stream operator
+        ;        else if (definite _one_symbols_operator?.symbol?)
+        ;            eval "define wrap_item ", _one_symbols_operator.symbol
+        ;            if (unary) & (definite _one_symbols_operator?._unary_symbols?.symbol?)
+        ;                ;display "HERE", $0A
+        ;                eval "define wrap_item ", _one_symbols_operator._unary_symbols.symbol
+        ;            end if
+        ;            _insert_token result,       ; ** insert empty **
+        ;            _insert_token wrap_item,    ; ** insert empty **
+        ;        else match =(, item ; preserve unary
+        ;        else match =), item ; preserve unary
+        ;        else
+        ;            unary = $00
+        ;        end match
+        ;    end repeat
+        ;end namespace
+        ;match mod_token not_empty, _MODULUS wrap_item
+        ;    operand = $00
+        ;    iterate complex_operator, "<",">","|","&","=","!"
+        ;        eval "define complex_equ ", complex_operator
+        ;        match =item, complex_equ
+        ;            define stream operator
+        ;            break
+        ;        end match
+        ;        define complex_equ
+        ;    end iterate
+        ;    match,complex_equ
+        ;        match =+, item
+        ;            define wrap_item __add
+        ;            if (unary)
+        ;                define wrap_item __unary_add
+        ;            end if
+        ;        else match =-, item
+        ;            define wrap_item __sub
+        ;            if (unary)
+        ;                define wrap_item __unary_sub
+        ;            end if
+        ;        else match =*, item
+        ;            define wrap_item __mul
+        ;;        else match =/, item
+        ;            define wrap_item __div
+        ;        else match =^, item
+        ;            define wrap_item __xor
+        ;        else match =~, item
+        ;            define wrap_item __unary_neg
+        ;        else match =mod_token, item
+        ;            define wrap_item __mod
+        ;        else match =(, item ; preserve unary
+        ;        else match =), item ; preserve unary
+        ;;        else
+        ;            operand = $01
+        ;            unary = $00
+         ;       end match
+         ;   end match
+         ;   if (~(operand))
+         ;       unary = $01
+         ;   end if
+         ;   match _, wrap_item
+         ;       if ((`_) <> (`item)) ; add space around replaced operator
+         ;           _insert_token result,
+         ;           _insert_token wrap_item,
+         ;       end if
+        ; ;   end match
+        ;end match
+;        match _, stream
+;            _insert_token _, wrap_item
+;        end match
     end irps
 end macro
 
