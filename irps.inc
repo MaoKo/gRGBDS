@@ -1,83 +1,91 @@
 
 macro _core_irps? parameter?*, text?&
-    local  iterator, stream, inc_space, inc_ident, identifier, valid_id, last_dot, str_item, buffer, token
+    local  iterator, stream, inc_space, inc_ident, identifier, buffer, token
     define iterator parameter
     define inc_space 0
     define inc_ident 0
-    rawmatch it =[ options =], parameter
-        redefine iterator it
-        rawmatch =+ option_1 =| =+ option_2, options
-            rawmatch =space? =ident?, option_1 option_2
-            else rawmatch =ident? =space?, option_1 option_2
-            else
-                err "syntax error: bad irps option"
-            end rawmatch
-            redefine inc_space 1
-            redefine inc_ident 1
-        else rawmatch =+ =space?, options
-            redefine inc_space 1
-        else rawmatch =+ =ident?, options
-            redefine inc_ident 1
-        else
-            err "syntax error: bad irps option"
-        end rawmatch
-    end rawmatch
+    ;rawmatch it =[ options =], parameter
+    ;    redefine iterator it
+    ;    rawmatch =+ option_1 =| =+ option_2, options
+    ;        rawmatch =space? =ident?, option_1 option_2
+    ;        else rawmatch =ident? =space?, option_1 option_2
+    ;        else
+    ;            err "syntax error: bad irps option"
+    ;        end rawmatch
+    ;        redefine inc_space 1
+    ;        redefine inc_ident 1
+    ;    else rawmatch =+ =space?, options
+    ;        redefine inc_space 1
+    ;    else rawmatch =+ =ident?, options
+    ;        redefine inc_ident 1
+    ;    else
+    ;        err "syntax error: bad irps option"
+    ;    end rawmatch
+    ;end rawmatch
+
+    ;macro handle_space?
+    ;    match _, itentifier
+    ;        define identifier
+    ;        define token _
+    ;    end match
+    ;    define token
+    ;end macro
+
+    ;macro handle_ident? item?*&
+    ;    local dotend, valid
+    ;    valid _fasmg_identifier item
+    ;    if (valid)
+    ;        virtual at $00
+    ;            db $00
+    ;            match _, identifier
+    ;                db (`_)
+    ;            end match
+    ;            load dotend:byte from ($ - $01)
+    ;        end virtual
+    ;        if (dotend = $2E) | (`item = '.')
+    ;            _insert_token identifier, item
+    ;        else
+    ;            match _, identifier
+    ;                define token _
+    ;            end match
+    ;            if (valid = $02)
+    ;                redefine identifier item
+    ;            else
+    ;                define token item
+    ;            end if
+    ;        end if
+    ;    else
+    ;        match _, identifier
+    ;            redefine identifier
+    ;            define   token _
+    ;        end match
+    ;        define token item
+    ;    end if
+    ;end macro
+
     buffer equ text ; expands all symbolic variable once
+    define identifier
     while $01
         match _ remain, buffer
-            define token _
-            match =1 =_= insert_space, inc_space buffer
-                define token
-            end match
+            ;handle_ident _
+            ;match =1 =_= insert_space, inc_space buffer
+                ;handle_space
+            ;end match
             redefine buffer remain
         else 
             match _, buffer
-                define token _
-                match =1 =_= , inc_space buffer
-                    define token
-                end match
+                ;handle_ident _
+                ;match =1 =_= , inc_space buffer
+                    ;handle_space
+                ;end match
             end match
             break
         end match
     end while
-    match =1, inc_ident
-        define identifier
-        last_dot = $00
-        irpv item, token
-            rawmatch =1, %
-                repeat %%
-                    restore token ; purge all values of token
-                end repeat
-            end rawmatch
-            str_item = (`item)
-            _fasmg_identifier valid_id, str_item
-            if (valid_id) 
-                if ((str_item) = ".") | (last_dot)
-                    _insert_token identifier, item
-                    if ((str_item) = ".")
-                        last_dot = $01
-                    end if
-                else 
-                    match _, identifier
-                        define token _
-                    end match
-                    redefine identifier item
-                end if
-            else
-                match _, identifier
-                    define token _
-                    redefine identifier
-                end match
-                define token item
-            end if
-            if (last_dot) & ((str_item) <> ".")
-                last_dot = $00
-            end if
-        end irpv
-        match _, identifier
-            define token _
-        end match
-    end match
+    ;match _, identifier
+    ;    define token _
+    ;end match
+    ;purge handle_space?, handle_ident?
     match it, iterator
         outscope irpv it, token
 end macro

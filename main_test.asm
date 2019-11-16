@@ -14,7 +14,9 @@ include "preprocessor.inc"
 
 include "fasmg_identifier.inc"
 
-repeat $100
-    irps item[+space|+ident], 1 * 4 * 1 * 1 * 2 * 3 * 4 * 6
+
+repeat $10000
+    irps item, _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     end irps
 end repeat
+
