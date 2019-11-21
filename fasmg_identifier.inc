@@ -16,6 +16,6 @@ struc _fasmg_identifier? token?*&
                 end match
             end rawmatch
         end namespace
+        restore __identifier?.token.
     end match
-    restore  __identifier?.token.
 end struc

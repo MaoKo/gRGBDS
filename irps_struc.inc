@@ -38,25 +38,25 @@ struc _body_irps_template? n?*
             matchs_body _append_string "rmatch "
             futur_param = ""
             iterate item, _
-                futur_param _append_string (`item)
+                futur_param _append_string "<", (`item), ">"
                 if ((%%) > (%))
                     futur_param _append_string ", "
                 end if
                 matchs_body _append_string (`item), " "
             end iterate
-            matchs_body _append_string "__remain, _",                   $0A,\
-                                       "irps_options _, ", futur_param, $0A,\
-                                       "redefine buffer __remain",      $0A
+            matchs_body _append_string "__remain, _",                     $0A,\
+                                       "irps_options <_>, ", futur_param, $0A,\
+                                       "redefine buffer __remain",        $0A
         end match
     end repeat
-    matchs_body _append_string "else",                              $0A,\
-                               "rmatch __remain, _",                $0A,\
-                               "irps_options _, __remain",          $0A,\
-                               "if (end_space)",                    $0A,\
-                               "define token",                      $0A,\
-                               "end if",                            $0A,\
-                               "end rmatch",                        $0A,\
-                               "break",                             $0A
+    matchs_body _append_string "else",                       $0A,\
+                               "rmatch __remain, _",         $0A,\
+                               "irps_options <_>, __remain", $0A,\
+                               "if (end_space)",             $0A,\
+                               "define token",               $0A,\
+                               "end if",                     $0A,\
+                               "end rmatch",                 $0A,\
+                               "break",                      $0A
     repeat ((bsr total_rept) + $01)
         matchs_body _append_string "end rmatch", $0A
     end repeat
@@ -70,21 +70,14 @@ end struc
 __irps_pattern _body_irps_template $04
 eval __irps_pattern
 
-_irps_options? := $00
-namespace _irps_options?
-    iterate option, space,ident
-        option? := (%)
-    end iterate
-end namespace
-
 macro __irps_handle_options?!
-    rawmatch =1 =1, __ispace __iident
+    if (inc_space) & (inc_ident)
         macro irps_options? _?*, items?*&
             redefine reach_item
             iterate item, items
                 id_valid _fasmg_identifier item
                 if (identifier) & (id_valid)
-                    irpv __token, token
+                    match __token, token
                         rawmatch =., item
                             redefine token  __token.
                         else
@@ -99,7 +92,7 @@ macro __irps_handle_options?!
                                 end if
                             end rawmatch
                         end rawmatch
-                    end irpv
+                    end match
                 else
                     identifier = $00
                     if (id_valid = __FASMG_IDENTIFIER)
@@ -116,7 +109,7 @@ macro __irps_handle_options?!
                 reach_item reequ reach_item =item
             end iterate
         end macro
-    else rawmatch =1, __ispace
+    else if (inc_space)
         macro irps_options? _?*, items?*&
             redefine reach_item
             iterate item, items
@@ -129,12 +122,12 @@ macro __irps_handle_options?!
                 reach_item reequ reach_item =item
             end iterate
         end macro
-    else rawmatch =1, __iident
+    else if (inc_ident)
         macro irps_options? _?*, items?*&
             iterate item, items
                 id_valid _fasmg_identifier item
                 if (identifier) & (id_valid)
-                    irpv __token, token
+                    match __token, token
                         rawmatch =., item
                             redefine token  __token.
                         else
@@ -149,7 +142,7 @@ macro __irps_handle_options?!
                                 end if
                             end rawmatch
                         end rawmatch
-                    end irpv
+                    end match
                 else
                     identifier = $00
                     if (id_valid = __FASMG_IDENTIFIER)
@@ -165,41 +158,49 @@ macro __irps_handle_options?!
                 define token item
             end iterate
         end macro
-    end rawmatch
+    end if
 end macro
+
+_irps_options? := $00
+namespace _irps_options?
+    space? := "ident"
+    ident? := "space"
+end namespace
 
 macro irps?! parameter?*, text?*&
     local iterator, identifier, inc_space, inc_ident, buffer, token, reach_item, id_valid, end_space
     redefine iterator parameter
-    redefine inc_space 0
-    redefine inc_ident 0
     rawmatch it =[ options =], parameter
         redefine iterator it
         rawmatch =+ option_1 =| =+ option_2, options
             if (definite _irps_options.option_1) & (definite _irps_options.option_2)\
                     & (_irps_options.option_1 <> _irps_options.option_2)
-                redefine inc_space 1
-                redefine inc_ident 1
+                inc_space = $01
+                inc_ident = $01
             else
                 err "syntax error: bad irps options"
             end if
         else rawmatch =+ option, options
             if (definite _irps_options.option)
-                eval "redefine", " ", "inc_", (`option), " ", "1"
+                eval "inc_", (`option), " = ", "$01"
+                eval "inc_", (_irps_options.option), " = ", "$00"
             else
                 err "syntax error: bad irps option"
             end if
         end rawmatch
+    else
+        inc_space = $00
+        inc_ident = $00
     end rawmatch
     buffer  equ text
     identifier = $00
     end_space = $00
-    match __ispace __iident, inc_space inc_ident
-        match =1 _= , __ispace buffer
+    if (inc_space)
+        match _= ,buffer
             end_space = $01
         end match
-        __irps_handle_options
-    end match
+    end if
+    __irps_handle_options
     while $01
         _irps_invoker
     end while
