@@ -15,9 +15,13 @@ include "preprocessor.inc"
 
 include "fasmg_identifier.inc"
 
-repeat $10000
-irps A, _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-end irpv
-end match
-end repeat
+;repeat $10000
+;irps A, _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+;end irpv
+;end match
+;end repeat
 
+define empty 
+irps A[+space], A B C empty
+    display "A = ", `A, $A
+end irps

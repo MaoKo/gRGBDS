@@ -40,19 +40,19 @@ macro _add_constant_pool? result?*, value?*
     end match
 end macro
 
-_symbols_operator_namespace? := $00
-namespace _symbols_operator_namespace?
+_symbols_operator? := $00
+namespace _symbols_operator?
     _one_symbols_operator? := $00
     namespace _one_symbols_operator? 
         _unary_symbols := $00
-        iterate <cop*,sub*,unary>,  "+", __add, __unary_add,\
+        iterate <sop*,sub*,unary>,  "+", __add, __unary_add,\
                                     "-", __sub, __unary_sub,\
                                     "*", __mul,,            \
                                     "/", __div,,            \
                                     "^", __xor,,            \
                                     "~", __unary_neg,,      \
                                     "%", __mod,
-            repeat $01, i:cop
+            repeat $01, i:(sop)
                 ?i? = (`sub)
                 rawmatch _, unary
                     namespace _unary_symbols?
@@ -69,17 +69,32 @@ namespace _symbols_operator_namespace?
                 ?i? = $01
             end repeat
         end iterate
+        iterate <sop,sub>,          "<<", __shl,\
+                                    ">>", __shr,\
+                                    "||",  __or,\
+                                    "&&", __and,\
+                                    "<=",  __le,\
+                                    ">=",  __ge,\
+                                    "==",  __eq,\
+                                    "!=",  __ne
+            repeat $01, i:(sop)
+                ?i? = (`sub)
+            end repeat
+        end iterate
     end namespace
 end namespace
 
 __MODULUS equ % ; ensure to not expand even when in loop
 macro _replace_symbols_operator? result?*, line?*&
-    local wrap_item, stream, empty, operator, operand, unary, complex_equ, part_1_equ, part_2_equ, operator_equ
-    define result
-    define operator
+    ;local wrap_item, stream, empty, operator, operand, unary, complex_equ, part_1_equ, part_2_equ, operator_equ
+    ;define result
+    ;define operator
+    ;unary  = $01
+    ;define stream result
+
+    local two_char_operator, token, empty
     define empty
-    unary  = $01
-    define stream result
+
     irps item[+space|+ident], line empty ; when '<' or '>' reach the end
  ;       define wrap_item item
         ;match =operator?, stream ; operator of more than 1 token
@@ -118,26 +133,44 @@ macro _replace_symbols_operator? result?*, line?*&
         ;    define operator
         ;    define stream result
         ;end match
-        ;namespace _symbols_operator_namespace?
-        ;    repeat $01, symbol:(`item)
-        ;        unary = $01
-        ;        if (definite _two_symbols_operator?.symbol?)
-        ;            define stream operator
-        ;        else if (definite _one_symbols_operator?.symbol?)
-        ;            eval "define wrap_item ", _one_symbols_operator.symbol
-        ;            if (unary) & (definite _one_symbols_operator?._unary_symbols?.symbol?)
-        ;                ;display "HERE", $0A
-        ;                eval "define wrap_item ", _one_symbols_operator._unary_symbols.symbol
-        ;            end if
-        ;            _insert_token result,       ; ** insert empty **
-        ;            _insert_token wrap_item,    ; ** insert empty **
-        ;        else match =(, item ; preserve unary
-        ;        else match =), item ; preserve unary
-        ;        else
-        ;            unary = $00
-        ;        end match
-        ;    end repeat
-        ;end namespace
+
+        define token item
+        rawmatch,item
+        else
+            namespace _symbols_operator?
+                repeat $01, symbol:(`item)
+                    if (two_char_operator)
+                        repeat $01, symbol_2:(two_char_operator or (symbol shl $08))
+                            if (definite _two_symbols_operator?.symbol?)
+                                eval "redefine token ", _two_symbols_operator.symbol
+                            end if
+                        end repeat
+                        two_char_operator = $00
+                    else
+                        unary = $01
+                        if (definite _two_symbols_operator?.symbol?)
+                            two_char_operator = symbol
+                            ;define stream operator
+                        else if (definite _one_symbols_operator?.symbol?)
+                            eval "define token ", _one_symbols_operator.symbol
+                            if (unary) & (definite _one_symbols_operator?._unary_symbols?.symbol?)
+                                eval "redefine token ", _one_symbols_operator._unary_symbols.symbol
+                            end if
+                            _insert_token result,       ; ** insert empty **
+                            _insert_token wrap_item,    ; ** insert empty **
+                        else match =(, item ; preserve unary
+                        else match =), item ; preserve unary
+                        else
+                            unary = $00
+                        end match
+                    end if
+                end repeat
+            end namespace
+        end rawmatch
+        if (~(two_char_operator))
+            _insert_token result, token
+        end if
+
         ;match mod_token not_empty, _MODULUS wrap_item
         ;    operand = $00
         ;    iterate complex_operator, "<",">","|","&","=","!"
