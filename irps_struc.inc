@@ -81,7 +81,7 @@ struc _body_irps_template? n?*
     end repeat
     matchs_body _append_string "else",                       $0A,\
                                "rmatch __remain, _",         $0A,\
-                               "define token __remain",      $0A,\ ; TODO HANDLE SPACE
+                               "irps_options _, __remain",   $0A,\ ; TODO HANDLE SPACE
                                "end rmatch",                 $0A,\
                                "break",                      $0A
     repeat ((bsr total_rept) + $01)
@@ -109,17 +109,19 @@ macro __irps_handle_options?!
         macro irps_options? _?*, items?*&
             redefine reach_item
             iterate item, items
-                ivalid _fasmg_identifier item
-                if (identifier) & (ivalid)
-                    match _, token
+                id_valid _fasmg_identifier item
+                if (identifier) & (id_valid)
+                    match __token, token
                         rawmatch =., item
-                            redefine token  _.
+                            redefine token  __token.
                         else
-                            rawmatch __dotend =., _
+                            rawmatch __dotend =., __token
                                redefine token __dotend.item
+                            else rawmatch     =., __token
+                               redefine token         .item
                             else
                                 define token item
-                                if (ivalid <> __FASMG_IDENTIFIER)
+                                if (id_valid <> __FASMG_IDENTIFIER)
                                     identifier = $00
                                 end if
                             end rawmatch
@@ -127,13 +129,14 @@ macro __irps_handle_options?!
                     end match
                 else
                     identifier = $00
-                    if (ivalid = __FASMG_IDENTIFIER)
+                    if (id_valid = __FASMG_IDENTIFIER)
                         identifier = $01
                     end if
                     define token item
                 end if
                 irpv __reach, reach_item
                     rawmatch __reach =item= __insert, _
+                        identifier = $00
                         define token
                     end rawmatch
                 end irpv
@@ -156,17 +159,19 @@ macro __irps_handle_options?!
     else rawmatch =1, __iident
         macro irps_options? _?*, items?*&
             iterate item, items
-                ivalid _fasmg_identifier item
-                if (identifier) & (ivalid)
-                    match _, token
+                id_valid _fasmg_identifier item
+                if (identifier) & (id_valid)
+                    match __token, token
                         rawmatch =., item
-                            redefine token  _.
+                            redefine token  __token.
                         else
-                            rawmatch __dotend =., _
+                            rawmatch __dotend =., __token
                                redefine token __dotend.item
+                            else rawmatch     =., __token
+                               redefine token         .item
                             else
                                 define token item
-                                if (ivalid <> __FASMG_IDENTIFIER)
+                                if (id_valid <> __FASMG_IDENTIFIER)
                                     identifier = $00
                                 end if
                             end rawmatch
@@ -174,7 +179,7 @@ macro __irps_handle_options?!
                     end match
                 else
                     identifier = $00
-                    if (ivalid = __FASMG_IDENTIFIER)
+                    if (id_valid = __FASMG_IDENTIFIER)
                         identifier = $01
                     end if
                     define token item
@@ -191,7 +196,7 @@ macro __irps_handle_options?!
 end macro
 
 macro irps?! parameter?*, text?*&
-    local iterator, identifier, inc_space, inc_ident, buffer, token, reach_item, ivalid
+    local iterator, identifier, inc_space, inc_ident, buffer, token, reach_item, id_valid
     redefine iterator parameter
     redefine inc_space 0
     redefine inc_ident 0
@@ -221,6 +226,7 @@ macro irps?! parameter?*, text?*&
     while $01
         _irps_invoker
     end while
+    purge irps_options?
     match it, iterator
         outscope irpv it, token
 end macro
