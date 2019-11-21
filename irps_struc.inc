@@ -42,48 +42,54 @@ struc _body_irps_template? n?*
                 irps_macros _append_string (`item), "?*, "
                 matchs_body _append_string (`item), " "
             end iterate
-            irps_macros _append_string "_?*, __ispace?*, token_1?*", $0A
+            irps_macros _append_string "_?*, __ispace?*, token?*, handle_ident?*", $0A,\
+                                       "iterate item, "
             matchs_body _append_string "__remain, _",        $0A,\
-                                       "_irps_match_", (`%), " "
+                                       "irps_options _, "
             iterate item, _
-                matchs_body _append_string "_", (`%), ", "
-            end iterate
-            matchs_body _append_string "_, __ispace, token_1",      $0A,\
-                                       "redefine buffer __remain",  $0A
-        end match
-        repeat count, i:$01
-            irps_macros _append_string "define token_1 _", (`%), $0A
-            redefine placeholder =_1
-            repeat (count - $01), j:$02
-                if ((j - $01) = i)
-                    placeholder reequ placeholder=
-                    break
+                ;irps_macros _append_string "_", (`%)
+                matchs_body _append_string "_", (`%)
+                if ((%%) > (%))
+                    matchs_body _append_string ", "
                 end if
-                eval "placeholder reequ placeholder =_", (`j)
-            end repeat
-            if (%% = %)
-                placeholder reequ placeholder=
-            end if
-            match _, placeholder
-                irps_macros _append_string "rmatch =1 ", (`_), " __insert, __ispace _", $0A,\
-                                           "define token_1"  ,                          $0A,\
-                                           "end rmatch",                                $0A
-            end match
-        end repeat
-        irps_macros _append_string "end macro", $0A
+            end iterate
+           ; irps_macros _append_string $0A, "define token item", $0A, "end iterate", $0A
+            matchs_body _append_string $0A, "redefine buffer __remain", $0A
+            ;"_, __ispace, token, __irps_identifier", $0A,\
+        end match
+        ;repeat count, i:$01
+        ;    ;irps_macros _append_string "handle_ident _", (`%), $0A
+        ;    redefine placeholder =_1
+        ;    repeat (count - $01), j:$02
+        ;        if ((j - $01) = i)
+        ;            placeholder reequ placeholder=
+        ;            break
+        ;        end if
+        ;        eval "placeholder reequ placeholder =_", (`j)
+        ;    end repeat
+        ;    if (%% = %)
+        ;        placeholder reequ placeholder=
+        ;    end if
+        ;    match _, placeholder
+        ;    ;    irps_macros _append_string "rmatch =1 ", (`_), " __insert, __ispace _", $0A,\
+        ;    ;                               "define token",                              $0A,\
+        ;    ;                               "identifier = $00",                          $0A,\
+        ;    ;                               "end rmatch",                                $0A
+        ;    end match
+        ;end repeat
+        ;irps_macros _append_string "end macro", $0A
     end repeat
-    matchs_body _append_string "else",                    $0A,\
-                               "rmatch __remain, _",      $0A,\
-                               "define token_1 __remain", $0A,\ ; TODO HANDLE SPACE
-                               "end rmatch",              $0A,\
-                               "break",                   $0A
+    matchs_body _append_string "else",                       $0A,\
+                               "rmatch __remain, _",         $0A,\
+                               "define token __remain",      $0A,\ ; TODO HANDLE SPACE
+                               "end rmatch",                 $0A,\
+                               "break",                      $0A
     repeat ((bsr total_rept) + $01)
         matchs_body _append_string "end rmatch", $0A
     end repeat
     matchs_body _append_string "end match", $0A
     . = ""
-    . _append_string irps_macros,\
-                     super_macro,\
+    . _append_string super_macro,\
                      matchs_body,\
                      "__OFF", $0A
 end struc
@@ -98,9 +104,97 @@ namespace _irps_options?
     end iterate
 end namespace
 
+macro __irps_handle_options?!
+    rawmatch =1 =1, __ispace __iident
+        macro irps_options? _?*, items?*&
+            redefine reach_item
+            iterate item, items
+                ivalid _fasmg_identifier item
+                if (identifier) & (ivalid)
+                    match _, token
+                        rawmatch =., item
+                            redefine token  _.
+                        else
+                            rawmatch __dotend =., _
+                               redefine token __dotend.item
+                            else
+                                define token item
+                                if (ivalid <> __FASMG_IDENTIFIER)
+                                    identifier = $00
+                                end if
+                            end rawmatch
+                        end rawmatch
+                    end match
+                else
+                    identifier = $00
+                    if (ivalid = __FASMG_IDENTIFIER)
+                        identifier = $01
+                    end if
+                    define token item
+                end if
+                irpv __reach, reach_item
+                    rawmatch __reach =item= __insert, _
+                        define token
+                    end rawmatch
+                end irpv
+                reach_item reequ reach_item =item
+            end iterate
+        end macro
+    else rawmatch =1, __ispace
+        macro irps_options? _?*, items?*&
+            redefine reach_item
+            iterate item, items
+                define token item
+                irpv __reach, reach_item
+                    rawmatch __reach =item= __insert, _
+                        define token
+                    end rawmatch
+                end irpv
+                reach_item reequ reach_item =item
+            end iterate
+        end macro
+    else rawmatch =1, __iident
+        macro irps_options? _?*, items?*&
+            iterate item, items
+                ivalid _fasmg_identifier item
+                if (identifier) & (ivalid)
+                    match _, token
+                        rawmatch =., item
+                            redefine token  _.
+                        else
+                            rawmatch __dotend =., _
+                               redefine token __dotend.item
+                            else
+                                define token item
+                                if (ivalid <> __FASMG_IDENTIFIER)
+                                    identifier = $00
+                                end if
+                            end rawmatch
+                        end rawmatch
+                    end match
+                else
+                    identifier = $00
+                    if (ivalid = __FASMG_IDENTIFIER)
+                        identifier = $01
+                    end if
+                    define token item
+                end if
+            end iterate
+        end macro
+    else
+        macro irps_options? _?*, items?*&
+            iterate item, items
+                define token item
+            end iterate
+        end macro
+    end rawmatch
+end macro
+
 macro irps?! parameter?*, text?*&
-    local iterator, identifier, stream, inc_space, inc_ident, buffer, token_1, token_2
+    local iterator, identifier, inc_space, inc_ident, buffer, token, reach_item, ivalid
     redefine iterator parameter
+    redefine inc_space 0
+    redefine inc_ident 0
     rawmatch it =[ options =], parameter
         redefine iterator it
         rawmatch =+ option_1 =| =+ option_2, options
@@ -113,66 +207,25 @@ macro irps?! parameter?*, text?*&
             end if
         else rawmatch =+ option, options
             if (definite _irps_options.option)
-                eval "redefine inc_", (`option), " 1"
+                eval "redefine", " ", "inc_", (`option), " ", "1"
             else
                 err "syntax error: bad irps option"
             end if
         end rawmatch
-    else
-        redefine inc_space 0
-        redefine inc_ident 0
     end rawmatch
-    redefine identifier
-    redefine stream token_1
-    buffer equ text
+    buffer  equ text
+    identifier = $00
     match __ispace __iident, inc_space inc_ident
-        while $01
-            _irps_invoker
-        end while
+        __irps_handle_options
     end match
-;    if (inc_ident)
-;        redefine stream token_2
-;        irpv item, token_1
-;            ivalid _fasmg_identifier item
-;            match _, identifier
-;                if (ivalid)
-;                    rawmatch =., item
-;                        eval "redefine identifier ", (`_), "."
-;                    else
-;                        define  _.
-;                        match __dotend, _
-;                            eval "redefine identifier ", (`_), (`item)
-;                        else
-;                            define token_2 _
-;                            if (ivalid = _fasmg_token_lookup.__FASMG_IDENTIFIER)
-;                                redefine identifier item
-;                            end if
-;                        end match
-;                        restore _.
-;                    end rawmatch
-;                else
-;                    redefine identifier
-;                    define   token_2 _
-;                end if
-;            else
-;                if (ivalid = _fasmg_token_lookup.__FASMG_IDENTIFIER)
-;                    redefine identifier item
-;                end if
-;            end match
-;            if (~(ivalid))
-;                define token_2 item
-;            end if
-;        end irpv
-;        match _, identifier
-;            define token_2 _
-;        end match
-;    end if
-    match it st, iterator stream
-        outscope irpv it, st
+    while $01
+        _irps_invoker
+    end while
+    match it, iterator
+        outscope irpv it, token
 end macro
 
 macro end?.irps?!
         end irpv
     end match
 end macro
-
