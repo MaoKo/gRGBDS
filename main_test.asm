@@ -1,19 +1,19 @@
 
 ;include "gRGBDS.inc"
 
-;include "pairing.inc"
-;include "assert.inc"
-;include "insert_token.inc"
+include "pairing.inc"
+include "assert.inc"
+include "insert_token.inc"
 
 ;include "irps.inc"
-;include "irps_struc.inc"
+include "irps_struc.inc"
 ;include "string.inc"
 
 ;include "preprocessor.inc"
 ;include "sections.inc"
 ;include "rpn.inc"
 
-;include "fasmg_identifier.inc"
+include "fasmg_identifier.inc"
 
 ;repeat $10000
 ;irps A[+space], _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
@@ -21,16 +21,8 @@
 ;end match
 ;end repeat
 
-macro inst?
-end macro
+;display __irps_pattern
 
-define A 1
-
-match __A, A
-    repeat $80000
-        if (__A)
-        end if
-        if (__A)
-        end if
-    end repeat
-end match
+irps A, A B C
+    display "A = ", `A, $A
+end irps

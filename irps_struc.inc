@@ -6,7 +6,214 @@ struc _append_string? src?*&
     end iterate
 end struc
 
+;macro _irps_invoker?!
+;end macro
 macro _irps_invoker?!
+match _, buffer
+rmatch _1 _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 __remain, _
+define token _1
+rawmatch =_1= __insert, _
+    define token
+end rawmatch
+redefine buffer _2 _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _2
+rawmatch =_2= __insert, _
+    define token
+end rawmatch
+redefine buffer _3 _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _3
+rawmatch =_3= __insert, _
+    define token
+end rawmatch
+redefine buffer _4 _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _4
+rawmatch =_4= __insert, _
+    define token
+end rawmatch
+redefine buffer _5 _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _5
+rawmatch =_5= __insert, _
+    define token
+end rawmatch
+redefine buffer _6 _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _6
+rawmatch =_6= __insert, _
+    define token
+end rawmatch
+redefine buffer _7 _8 _9 _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _7
+rawmatch =_7= __insert, _
+    define token
+end rawmatch
+redefine buffer _8 _9 _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _8
+rawmatch =_8= __insert, _
+    define token
+end rawmatch
+redefine buffer _9 _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _9
+rawmatch =_9= __insert, _
+    define token
+end rawmatch
+redefine buffer _10 _11 _12 _13 _14 _15 _16 __remain
+
+define token _10
+rawmatch =_10= __insert, _
+    define token
+end rawmatch
+redefine buffer _11 _12 _13 _14 _15 _16 __remain
+
+define token _11
+rawmatch =_11= __insert, _
+    define token
+end rawmatch
+redefine buffer _12 _13 _14 _15 _16 __remain
+
+define token _12
+rawmatch =_12= __insert, _
+    define token
+end rawmatch
+redefine buffer _13 _14 _15 _16 __remain
+
+define token _13
+rawmatch =_13= __insert, _
+    define token
+end rawmatch
+redefine buffer _14 _15 _16 __remain
+
+define token _14
+rawmatch =_14= __insert, _
+    define token
+end rawmatch
+redefine buffer _15 _16 __remain
+
+define token _15
+rawmatch =_15= __insert, _
+    define token
+end rawmatch
+redefine buffer _16 __remain
+
+define token _16
+rawmatch =_16= __insert, _
+    define token
+end rawmatch
+redefine buffer __remain
+else
+rmatch _1 _2 _3 _4 _5 _6 _7 _8 __remain, _
+define token _1
+rawmatch =_1= __insert, _
+    define token
+end rawmatch
+redefine buffer _2 _3 _4 _5 _6 _7 _8 __remain
+
+define token _2
+rawmatch =_2= __insert, _
+    define token
+end rawmatch
+redefine buffer _3 _4 _5 _6 _7 _8 __remain
+
+define token _3
+rawmatch =_3= __insert, _
+    define token
+end rawmatch
+redefine buffer _4 _5 _6 _7 _8 __remain
+
+define token _4
+rawmatch =_4= __insert, _
+    define token
+end rawmatch
+redefine buffer _5 _6 _7 _8 __remain
+
+define token _5
+rawmatch =_5= __insert, _
+    define token
+end rawmatch
+redefine buffer _6 _7 _8 __remain
+
+define token _6
+rawmatch =_6= __insert, _
+    define token
+end rawmatch
+redefine buffer _7 _8 __remain
+
+define token _7
+rawmatch =_7= __insert, _
+    define token
+end rawmatch
+redefine buffer _8 __remain
+
+define token _8
+rawmatch =_8= __insert, _
+    define token
+end rawmatch
+redefine buffer __remain
+else
+rmatch _1 _2 _3 _4 __remain, _
+define token _1
+rawmatch =_1= __insert, _
+    define token
+end rawmatch
+redefine buffer _2 _3 _4 __remain
+
+define token _2
+rawmatch =_2= __insert, _
+    define token
+end rawmatch
+redefine buffer _3 _4 __remain
+
+define token _3
+rawmatch =_3= __insert, _
+    define token
+end rawmatch
+redefine buffer _4 __remain
+
+define token _4
+rawmatch =_4= __insert, _
+    define token
+end rawmatch
+redefine buffer __remain
+else
+rmatch _1 _2 __remain, _
+define token _1
+rawmatch =_1= __insert, _
+    define token
+end rawmatch
+redefine buffer _2 __remain
+
+define token _2
+rawmatch =_2= __insert, _
+    define token
+end rawmatch
+redefine buffer __remain
+else
+rmatch _1 __remain, _
+define token _1
+rawmatch =_1= __insert, _
+    define token
+end rawmatch
+redefine buffer __remain
+else
+rmatch __remain, _
+define token __remain
+;if (end_space)
+;define token
+;end if
+end rmatch
+break
+end rmatch
+end rmatch
+end rmatch
+end rmatch
+end rmatch
+end match
 end macro
 
 struc _body_irps_template? n?*
@@ -67,8 +274,8 @@ struc _body_irps_template? n?*
                      "__OFF", $0A
 end struc
 
-__irps_pattern _body_irps_template $04
-eval __irps_pattern
+;__irps_pattern _body_irps_template $04
+;eval __irps_pattern
 
 macro __irps_handle_options?!
     if (inc_space) & (inc_ident)

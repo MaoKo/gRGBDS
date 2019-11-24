@@ -51,7 +51,12 @@ namespace _symbols_operator?
                                     "/", __div,,            \
                                     "^", __xor,,            \
                                     "~", __unary_neg,,      \
-                                    "%", __mod,
+                                    "%", __mod,,            \
+                                    "<",  __lt,,            \
+                                    ">",  __gt,,            \
+                                    "|",  __or,,            \
+                                    "&", __and,,            \
+                                    "!", __unary_not,
             repeat $01, i:(sop)
                 ?i? = (`sub)
                 rawmatch _, unary
@@ -69,14 +74,14 @@ namespace _symbols_operator?
                 ?i? = $01
             end repeat
         end iterate
-        iterate <sop,sub>,          "<<", __shl,\
-                                    ">>", __shr,\
-                                    "||",  __or,\
-                                    "&&", __and,\
-                                    "<=",  __le,\
-                                    ">=",  __ge,\
-                                    "==",  __eq,\
-                                    "!=",  __ne
+        iterate <sop,sub>,          "<<",         __shl,\
+                                    ">>",         __shr,\
+                                    "||",  __logical_or,\
+                                    "&&", __logical_and,\
+                                    "<=",          __le,\
+                                    ">=",          __ge,\
+                                    "==",          __eq,\
+                                    "!=",          __ne
             repeat $01, i:(sop)
                 ?i? = (`sub)
             end repeat
@@ -92,12 +97,11 @@ struc _replace_symbols_operator? line?*&
     ;unary  = $01
     ;define stream result
 
-    local two_char_operator, unary, token, empty
+    local two_char_operator, unary, token
     two_char_operator = $00
     unary = $01
-    redefine empty
     redefine .
-    irps item[+space|+ident], line empty ; when '<' or '>' reach the end
+    irps item[+space|+ident], line
  ;       define wrap_item item
         ;match =operator?, stream ; operator of more than 1 token
         ;    match _1 _2, operator item ; ensure item is empty
