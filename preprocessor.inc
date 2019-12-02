@@ -42,6 +42,7 @@ end macro
 
 _symbols_operator? := $00
 namespace _symbols_operator?
+    __MODULUS equ % ; ensure to not expand even when in loop
     _one_symbols_operator? := $00
     namespace _one_symbols_operator? 
         _unary_symbols? := $00
@@ -89,150 +90,68 @@ namespace _symbols_operator?
     end namespace
 end namespace
 
-__MODULUS equ % ; ensure to not expand even when in loop
 struc _replace_symbols_operator? line?*&
     ;local wrap_item, stream, empty, operator, operand, unary, complex_equ, part_1_equ, part_2_equ, operator_equ
-    ;define result
-    ;define operator
-    ;unary  = $01
-    ;define stream result
-
-    local two_char_operator, unary, token
-    two_char_operator = $00
+    local transform, multi, unary, token
+    multi = $00
+    transform = ""
     unary = $01
     redefine .
-    irps item[+space|+ident], line
- ;       define wrap_item item
-        ;match =operator?, stream ; operator of more than 1 token
-        ;    match _1 _2, operator item ; ensure item is empty
-        ;        iterate <part_1,part_2>, "|","|", "&","&", "=","=", "!","=",\
-        ;                                 "<","<", "<","=", ">",">", ">","="
-        ;            eval "part_1_equ equ ", part_1
-        ;            eval "part_2_equ equ ", part_2
-        ;            match =_1 =_2, part_1_equ part_2_equ
-        ;                _insert_token operator, =_2
-        ;                wrap_item equ
-        ;                break
-        ;            end match
-        ;        end iterate
-        ;    end match
-        ;    match _, operator
-        ;        iterate <kind,shape>,   __or,"|",  __logical_or,"||",\
-        ;                               __and,"&", __logical_and,"&&",\
-        ;                               __eq,"==",          __ne,"!=",\
-        ;                              __shl,"<<",         __shr,">>",\
-        ;                                __gt,">",          __ge,">=",\
-        ;                                __lt,"<",          __le,"<=",\
-        ;                         __unary_not,"!"
-        ;            eval "operator_equ equ ", shape
-        ;            match =_, operator_equ
-        ;                _insert_token result, ; ensure correct spacing
-        ;                _insert_token result, kind empty
-        ;                break
-        ;            end match
-        ;            define operator_equ
-        ;        end iterate
-        ;    end match
-        ;    match,operator_equ
-        ;        _insert_token result, operator
-        ;    end match
-        ;    define operator
-        ;    define stream result
-        ;end match
-
-        define token item
-        rawmatch,item
-        else
-            namespace _symbols_operator?
-                repeat $01, symbol:(`item)
-                    if (two_char_operator)
-                        repeat $01, symbol_2:(two_char_operator or (symbol shl $08))
-                            if (definite _two_symbols_operator?.symbol_2?)
-                                eval "redefine token ", _two_symbols_operator.symbol_2
-                                token _insert_token ; ** insert empty **
-                            end if
-                        end repeat
-                        two_char_operator = $00
-                    else
-                        if (definite _two_symbols_operator?.symbol?) | (definite _one_symbols_operator?.symbol?)
-                            if (definite _two_symbols_operator?.symbol?)
-                                two_char_operator = symbol
-                            else if (definite _one_symbols_operator?.symbol?)
-                                eval "redefine token ", _one_symbols_operator.symbol
-                                if (unary) & (definite _one_symbols_operator?._unary_symbols?.symbol?)
-                                    eval "redefine token ", _one_symbols_operator._unary_symbols.symbol
-                                end if
-                                token _insert_token ; ** insert empty **
-                            end if
-                            . _insert_token ; ** insert empty **
-                            unary = $01
-                        else rawmatch =(, item 
-                            unary = $01
-                        else rawmatch =), item
-                            unary = $01
+    irps item, line
+        redefine token item
+        namespace _symbols_operator?
+            repeat $01, symbol_1:(`item)
+                if (multi)
+                    repeat $01, symbol_2:(multi or (symbol_1 shl $08))
+                        if (definite _two_symbols_operator?.symbol_2?)
+                            eval "redefine token ", _two_symbols_operator.symbol_2
+                            token _insert_token ; ** insert empty ** ;
                         else
-                            unary = $00
-                        end rawmatch
-                    end if
-                end repeat
-            end namespace
-        end rawmatch
-        if (~(two_char_operator))
+                            eval "redefine token ", transform
+                            token _insert_token ; ** insert empty ** ;
+                        end if
+                    end repeat
+                    multi = $00
+                else
+                    if (definite _one_symbols_operator?.symbol_1?) | (definite _two_symbols_operator?.symbol_1?)
+                        transform = (`item)
+                        if (definite _one_symbols_operator?.symbol_1?)
+                            transform = _one_symbols_operator.symbol_1
+                            if (unary) & (definite _one_symbols_operator?._unary_symbols?.symbol_1?)
+                                transform = _one_symbols_operator._unary_symbols.symbol_1
+                            end if
+                        end if
+
+                        if (definite _two_symbols_operator?.symbol_1?)
+                            multi = symbol_1
+                        else if (definite _one_symbols_operator?.symbol_1?)
+                            eval "redefine token ", transform
+                            token _insert_token ; ** insert empty ** ;
+                        end if
+                        . _insert_token ; ** insert empty **
+                        unary = $01
+                    else rawmatch =(, item 
+                        unary = $01
+                    else rawmatch =), item
+                        unary = $01
+                    else
+                        unary = $00
+                    end rawmatch
+                end if
+            end repeat
+        end namespace
+        if (~(multi))
             . _insert_token token
         end if
-
         ;match mod_token not_empty, _MODULUS wrap_item
-        ;    operand = $00
-        ;    iterate complex_operator, "<",">","|","&","=","!"
-        ;        eval "define complex_equ ", complex_operator
-        ;        match =item, complex_equ
-        ;            define stream operator
-        ;            break
-        ;        end match
-        ;        define complex_equ
-        ;    end iterate
-        ;    match,complex_equ
-        ;        match =+, item
-        ;            define wrap_item __add
-        ;            if (unary)
-        ;                define wrap_item __unary_add
-        ;            end if
-        ;        else match =-, item
-        ;            define wrap_item __sub
-        ;            if (unary)
-        ;                define wrap_item __unary_sub
-        ;            end if
-        ;        else match =*, item
-        ;            define wrap_item __mul
-        ;;        else match =/, item
-        ;            define wrap_item __div
-        ;        else match =^, item
-        ;            define wrap_item __xor
-        ;        else match =~, item
-        ;            define wrap_item __unary_neg
-        ;        else match =mod_token, item
-        ;            define wrap_item __mod
-        ;        else match =(, item ; preserve unary
-        ;        else match =), item ; preserve unary
-        ;;        else
-        ;            operand = $01
-        ;            unary = $00
-         ;       end match
-         ;   end match
-         ;   if (~(operand))
-         ;       unary = $01
-         ;   end if
-         ;   match _, wrap_item
-         ;       if ((`_) <> (`item)) ; add space around replaced operator
-         ;           _insert_token result,
-         ;           _insert_token wrap_item,
-         ;       end if
-        ; ;   end match
         ;end match
 ;        match _, stream
 ;            _insert_token _, wrap_item
 ;        end match
     end irps
+    if (multi)
+        eval ". _insert_token ", transform
+    end if
 end struc
 
 ; TODO: HANDLE MORE LITERAL (BINARY, OCTAL, AND MAYBE GAMEBOY GRAPHICS)

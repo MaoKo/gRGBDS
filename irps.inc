@@ -1,142 +1,77 @@
 
-macro _core_irps? parameter?*, text?&
-    local  iterator, stream, inc_space, inc_ident, identifier, buffer, token
-    define iterator parameter
-    define inc_space 0
-    define inc_ident 0
-    ;rawmatch it =[ options =], parameter
-    ;    redefine iterator it
-    ;    rawmatch =+ option_1 =| =+ option_2, options
-    ;        rawmatch =space? =ident?, option_1 option_2
-    ;        else rawmatch =ident? =space?, option_1 option_2
-    ;        else
-    ;            err "syntax error: bad irps option"
-    ;        end rawmatch
-    ;        redefine inc_space 1
-    ;        redefine inc_ident 1
-    ;    else rawmatch =+ =space?, options
-    ;        redefine inc_space 1
-    ;    else rawmatch =+ =ident?, options
-    ;        redefine inc_ident 1
-    ;    else
-    ;        err "syntax error: bad irps option"
-    ;    end rawmatch
-    ;end rawmatch
+_irps_line? := $00
+namespace _irps_line?
+end namespace
+define _irps_line._MODULUS %
 
-    ;macro handle_space?
-    ;    match _, itentifier
-    ;        define identifier
-    ;        define token _
-    ;    end match
-    ;    define token
-    ;end macro
-
-    ;macro handle_ident? item?*&
-    ;    local dotend, valid
-    ;    valid _fasmg_identifier item
-    ;    if (valid)
-    ;        virtual at $00
-    ;            db $00
-    ;            match _, identifier
-    ;                db (`_)
-    ;            end match
-    ;            load dotend:byte from ($ - $01)
-    ;        end virtual
-    ;        if (dotend = $2E) | (`item = '.')
-    ;            _insert_token identifier, item
-    ;        else
-    ;            match _, identifier
-    ;                define token _
-    ;            end match
-    ;            if (valid = $02)
-    ;                redefine identifier item
-    ;            else
-    ;                define token item
-    ;            end if
-    ;        end if
-    ;    else
-    ;        match _, identifier
-    ;            redefine identifier
-    ;            define   token _
-    ;        end match
-    ;        define token item
-    ;    end if
-    ;end macro
-
-    buffer equ text ; expands all symbolic variable once
-    define identifier
-    while $01
-        match _ remain, buffer
-            ;handle_ident _
-            ;match =1 =_= insert_space, inc_space buffer
-                ;handle_space
-            ;end match
-            redefine buffer remain
-        else 
-            match _, buffer
-                ;handle_ident _
-                ;match =1 =_= , inc_space buffer
-                    ;handle_space
-                ;end match
-            end match
-            break
+macro _irps_core? parameter?*, text?*&
+    local buffer, active, tokens, finals
+    buffer reequ text
+    active = $00
+    irpv _, buffer
+        repeat $01, i:(`_)
+            if (~(definite _irps_line.i.active))
+                restore _irps_line.i.active
+                define  _irps_line.i.active
+                _irps_line.i.active = $00
+                define _irps_line.i tokens
+                active = $01
+            end if
+            finals equ _irps_line.i
+        end repeat
+    end irpv
+    if (active)
+        match __MODULUS, _irps_line._MODULUS
+            while $01
+                match __input?, buffer
+                    redefine __prefix?
+                    redefine __prefix?.__input __delimiter__
+                    match,__prefix
+                        match _1 =__delimiter__? _2, __prefix?.__input
+                            local target, shifts
+                            shifts = lengthof((`__input)) - lengthof(`_2) 
+                            target = string ((($01 shl (shifts * $08)) - $01) and (`__input))
+                            if (target = "%") | (target = "% ")
+                                target = "__MODULUS"
+                            end if
+                            eval "match _, ", target
+                                define tokens _
+                                restore __prefix?._
+                            eval "end match"
+                            redefine buffer _2
+                        else match _, __input
+                            define tokens _
+                            restore __prefix?._
+                            break
+                        end match
+                    else
+                        rawmatch _ __remain, __input
+                            define tokens _
+                            redefine buffer __remain
+                        else
+                            define tokens __input
+                            break
+                        end rawmatch
+                    end match
+                else
+                    define tokens
+                end match
+            end while
         end match
-    end while
-    ;match _, identifier
-    ;    define token _
-    ;end match
-    ;purge handle_space?, handle_ident?
-    match it, iterator
-        outscope irpv it, token
+    end if
+    match _, finals
+        outscope irpv parameter, _
 end macro
 
-macro irps?! line?*&
+macro irps?! parameter?*, text?*&
     _pairing match, irpv
     match
     irpv
-    outscope _core_irps line
+    outscope _irps_core parameter, text
 end macro
 
-macro end?.irps?!
+macro end?.irps!
         end irpv
     end match
 end macro
 
-macro _core_iirpv? parameter?*, index?*, targets?*&
-    local state
-    state  equ index
-    iterate target, targets
-        match _, target
-            outscope irpv parameter, target
-                iterate <type,position>, FIRST,%,\
-                                         LAST,%%
-                    match =type?, index
-                        state equ position
-                        break
-                    end match
-                end iterate
-                indx state
-end macro
-
-macro iirpv?! line?*&
-    _pairing iterate, match, irpv
-    iterate
-    match
-    irpv
-    outscope _core_iirpv line
-end macro
-
-macro end?.iirpv?!
-                break
-            end irpv
-        end match
-    end iterate
-end macro
-
-macro reverse?
-    indx ((%% - %) + $01)
-end macro
-
-macro forward?
-    indx (%)
-end macro
