@@ -1,11 +1,11 @@
 
 _irps_line? := $00
 namespace _irps_line?
+    define __MODULUS % ; ensure to not expand even when in loop
 end namespace
-define _irps_line._MODULUS %
 
 macro _irps_core? parameter?*, text?*&
-    local buffer, active, tokens, finals
+    local buffer, active, token, final, space
     buffer reequ text
     active = $00
     irpv _, buffer
@@ -14,14 +14,18 @@ macro _irps_core? parameter?*, text?*&
                 restore _irps_line.i.active
                 define  _irps_line.i.active
                 _irps_line.i.active = $00
-                define _irps_line.i tokens
+                define _irps_line.i token
                 active = $01
             end if
-            finals equ _irps_line.i
+            final equ _irps_line.i
         end repeat
     end irpv
     if (active)
-        match __MODULUS, _irps_line._MODULUS
+        space = $00
+        match __terminate= ,buffer
+            space = $01
+        end match
+        match __MODULUS, _irps_line.__MODULUS
             while $01
                 match __input?, buffer
                     redefine __prefix?
@@ -35,31 +39,40 @@ macro _irps_core? parameter?*, text?*&
                                 target = "__MODULUS"
                             end if
                             eval "match _, ", target
-                                define tokens _
+                                define token _
+                                if ((`_) <> (target))
+                                    define token
+                                end if
                                 restore __prefix?._
                             eval "end match"
                             redefine buffer _2
                         else match _, __input
-                            define tokens _
+                            define token _
                             restore __prefix?._
                             break
                         end match
                     else
                         rawmatch _ __remain, __input
-                            define tokens _
+                            define token _
+                            rawmatch =_= __insert, __input
+                                define token
+                            end rawmatch
                             redefine buffer __remain
                         else
-                            define tokens __input
+                            define token __input
                             break
                         end rawmatch
                     end match
                 else
-                    define tokens
+                    define token
                 end match
             end while
         end match
+        if (space)
+            define token
+        end if
     end if
-    match _, finals
+    match _, final
         outscope irpv parameter, _
 end macro
 

@@ -4,7 +4,7 @@ namespace _constant_pool?
     iterate kind, string,float
         _constant_pool?._#kind? := $00
         namespace _#kind?
-            __index = $00
+            _index = $00
         end namespace
     end iterate
 end namespace
@@ -21,18 +21,18 @@ macro _add_constant_pool? result?*, value?*
         end if
     end iterate
     match kind, type
-        repeat (_constant_pool._#kind.__index), i:($00)
+        repeat (_constant_pool._#kind._index), i:($00)
             if (value = _constant_pool._#kind.i)
                 found equ kind.i
                 break
             end if
         end repeat
         match,found
-            repeat ($01), i:(_constant_pool._#kind.__index)
+            repeat ($01), i:(_constant_pool._#kind._index)
                 _constant_pool._#kind.i = value
                 found equ kind.i
             end repeat
-            _constant_pool._#kind.__index = _constant_pool._#kind.__index + $01
+            _constant_pool._#kind._index = _constant_pool._#kind._index + $01
         end match
         _insert_token result, found
     else
@@ -42,8 +42,8 @@ end macro
 
 _symbols_operator? := $00
 namespace _symbols_operator?
-    __MODULUS equ % ; ensure to not expand even when in loop
     _one_symbols_operator? := $00
+    _two_symbols_operator? := $00
     namespace _one_symbols_operator? 
         _unary_symbols? := $00
         iterate <sop*,sub*,unary>,  "+", __add, __unary_add,\
@@ -68,7 +68,6 @@ namespace _symbols_operator?
             end repeat
         end iterate
     end namespace
-    _two_symbols_operator? := $00
     namespace _two_symbols_operator?
         iterate begin, "<",">","|","&","=","!"
             repeat $01, i:begin
@@ -91,63 +90,62 @@ namespace _symbols_operator?
 end namespace
 
 struc _replace_symbols_operator? line?*&
-    ;local wrap_item, stream, empty, operator, operand, unary, complex_equ, part_1_equ, part_2_equ, operator_equ
-    local transform, multi, unary, token
+    local transform, continue, multi, unary, token
     multi = $00
     transform = ""
     unary = $01
     redefine .
     irps item, line
         redefine token item
+        continue = $01
         namespace _symbols_operator?
             repeat $01, symbol_1:(`item)
                 if (multi)
-                    repeat $01, symbol_2:(multi or (symbol_1 shl $08))
-                        if (definite _two_symbols_operator?.symbol_2?)
-                            eval "redefine token ", _two_symbols_operator.symbol_2
-                            token _insert_token ; ** insert empty ** ;
-                        else
-                            eval "redefine token ", transform
-                            token _insert_token ; ** insert empty ** ;
-                        end if
-                    end repeat
-                    multi = $00
-                else
-                    if (definite _one_symbols_operator?.symbol_1?) | (definite _two_symbols_operator?.symbol_1?)
-                        transform = (`item)
-                        if (definite _one_symbols_operator?.symbol_1?)
-                            transform = _one_symbols_operator.symbol_1
-                            if (unary) & (definite _one_symbols_operator?._unary_symbols?.symbol_1?)
-                                transform = _one_symbols_operator._unary_symbols.symbol_1
+                    rawmatch _, item
+                        repeat $01, symbol_2:(multi or (symbol_1 shl $08))
+                            if (definite _two_symbols_operator?.symbol_2?)
+                                eval "redefine token ", _two_symbols_operator.symbol_2
+                                token _insert_token ; ** insert empty ** ;
+                                continue = $00
                             end if
-                        end if
-
-                        if (definite _two_symbols_operator?.symbol_1?)
-                            multi = symbol_1
-                        else if (definite _one_symbols_operator?.symbol_1?)
-                            eval "redefine token ", transform
-                            token _insert_token ; ** insert empty ** ;
-                        end if
-                        . _insert_token ; ** insert empty **
-                        unary = $01
-                    else rawmatch =(, item 
-                        unary = $01
-                    else rawmatch =), item
-                        unary = $01
-                    else
-                        unary = $00
+                        end repeat
                     end rawmatch
+                    if (continue)
+                        eval ". _insert_token ", transform
+                        . _insert_token ; ** insert empty ** ;
+                    end if
+                    multi = $00
                 end if
+                if (continue) &\
+                        ((definite _one_symbols_operator?.symbol_1?) |\
+                        (definite  _two_symbols_operator?.symbol_1?))
+
+                    transform = (`item)
+                    if (definite _one_symbols_operator?.symbol_1?)
+                        transform = _one_symbols_operator.symbol_1
+                        if (unary) & (definite _one_symbols_operator?._unary_symbols?.symbol_1?)
+                            transform = _one_symbols_operator._unary_symbols.symbol_1
+                        end if
+                    end if
+
+                    if (definite _two_symbols_operator?.symbol_1?)
+                        multi = (`item)
+                    else if (definite _one_symbols_operator?.symbol_1?)
+                        eval "redefine token ", transform
+                        token _insert_token ; ** insert empty ** ;
+                    end if
+                    . _insert_token ; ** insert empty ** ;
+                    unary = $01
+                else rawmatch =(, item 
+                    unary = $01
+                else
+                    unary = $00
+                end rawmatch
             end repeat
         end namespace
         if (~(multi))
             . _insert_token token
         end if
-        ;match mod_token not_empty, _MODULUS wrap_item
-        ;end match
-;        match _, stream
-;            _insert_token _, wrap_item
-;        end match
     end irps
     if (multi)
         eval ". _insert_token ", transform
@@ -236,6 +234,96 @@ macro _expand_macro_parameter? result?*, line?*&
     ; TODO
     err "not yet implemented"
 end macro
+
+_single_line_macro? := $00
+namespace _single_line_macro?
+end namespace
+
+; Single-Line macro is defined as case-insensitive symbol
+macro _add_single_line_macro? list?*&
+    namespace _single_line_macro?
+        iterate <func*,pred*>, list
+            _symbols? equ func,pred
+        end iterate
+    end namespace
+end macro
+
+_add_single_line_macro STRLEN,strlen, STRCAT,strcat, STRCMP,strcmp,  STRIN, strin,\
+                       STRRIN,strrin, STRSUB,strsub, STRUPR,strupr, STRLWR,strlwr,\
+                       STRREP,strrep
+
+struc _expand_single_line_macro? line?*&
+    local function, callargs, matched, strip, return, stream, cparen
+    redefine function
+    redefine stream .
+    matched = $00
+    redefine .
+    irps item, line
+        strip = $00
+        rawmatch _, item
+            match pred, function
+                rawmatch =(, item
+                    cparen = cparen + $01
+                    if (matched)
+                        strip = $01
+                    end if
+                else rawmatch =), item
+                    cparen = cparen - $01
+                    if (~(cparen))
+                        irpv list, callargs
+                            return pred list
+                        end irpv
+                        restore function, callargs, stream, cparen
+                        match insert, stream
+                            if (return eqtype $00)
+                                repeat $01, i:(return)
+                                    insert _insert_token i
+                                end repeat
+                            else
+                                if (return eqtype "")
+                                    _eval_string new_string, return
+                                    _add_constant_pool pool_entry, new_string
+                                else if (return eqtype 0.0)
+                                    _add_constant_pool pool_entry, return
+                                else
+                                    err "unknwown type"
+                                end if
+                                insert _insert_token pool_entry
+                            end if
+                        end match
+                    else if (cparen < $00)
+                    end if
+                end rawmatch
+                if (matched) & (~(cparen))
+                    err "" 
+                end if
+                matched = $00
+            end match
+            namespace _single_line_macro?
+                irpv pairs, _symbols
+                    match func =, pred, pairs
+                        rawmatch =item?, func
+                            define function pred
+                            define callargs
+                            define stream callargs
+                            cparen =: $00
+                            matched = $01
+                            break
+                        end rawmatch
+                    end match
+                end irpv
+            end namespace
+        end rawmatch
+        if (~(matched)) & (~(strip))
+            match _, stream
+                _ _insert_token item
+            end match
+        end if
+    end irps
+    match pred, function
+        err ""
+    end match
+end struc
 
 macro _expand_single_line_macro? result?*, line?*&
     local return, empty, lparen, global, insert, stream, partial_ret, function, callargs, new_string, pool_entry

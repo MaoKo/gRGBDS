@@ -19,7 +19,7 @@ namespace _rpn_symbols?
             _precedence?    := precd
             _associativity? := assoc
         end namespace
-        _list_operator equ oprt
+        define _list_operator oprt
     end iterate
 end namespace
 

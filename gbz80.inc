@@ -38,7 +38,7 @@ macro nop?
 end macro
 
 macro stop?
-    db 0001000b
+    db 00001000b
 end macro
 
 macro daa?
