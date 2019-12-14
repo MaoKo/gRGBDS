@@ -52,29 +52,6 @@ end macro
 ;    end iterate
 ;end macro
 
-;macro _itoa_base? base?*, dst?*, src?
-;    local quotien, cbyte
-;    match _, src
-;        dst = (src)
-;    end match
-;    _assert_numeric (base), (dst)
-;    if ((base <= $01) | (base > $10))
-;        err "base too small or to large"
-;    else if (~(definite __hex_digit))
-;        virtual at $00
-;            __hexadecimal_digit::
-;            emit $01: "0123456789ABCDEF"
-;        end virtual
-;    end if
-;    quotien = dst
-;    dst = ""
-;    while (quotien)
-;        load cbyte : byte from __hexadecimal_digit : (quotien mod base)
-;        quotien = (quotien / base)
-;        dst  = string ((dst shl $08) + cbyte)
-;    end while
-;end macro
-
 ;macro _eval_string? result?*, text?*
 ;    local escape, lbrace, subname
 ;    _assert_string (text)

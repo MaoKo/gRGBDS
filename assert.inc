@@ -3,7 +3,19 @@ iterate <type,value>, string,"", numeric,$00, float,0.0f
     macro _assert_#type? line?*&
         iterate text, line
             if (~((text) eqtype value))
-                err "The parameter ", (`text), " must be of type ", (`type)
+                local ident, target
+                ident _fasmg_identifier text
+                redefine target text
+                if (ident = __FASMG_IDENTIFIER)
+                    irpv real, text
+                        reverse
+                        redefine target real
+                        break
+                    end irpv
+                end if
+                irpv _, target
+                    error "_assert_type", <"The parameter ", (`_), " must be of type ", (`type)>
+                end irpv
             end if
         end iterate
     end macro
@@ -36,8 +48,8 @@ macro _assert_fasmg_identifier? token?
     end if
 end macro
 
-macro _assert_defined_field? namespace?*, field?*
-    if (elementsof (field)) & (field relativeto namespace._undefined_field)
-        err "syntax error: field '", (`field), "' have an undefined value"
-    end if
-end macro
+;macro _assert_defined_field? namespace?*, field?*
+;    if (elementsof (field)) & (field relativeto namespace._undefined_field)
+;        err "syntax error: field '", (`field), "' have an undefined value"
+;    end if
+;end macro

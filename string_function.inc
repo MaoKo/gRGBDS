@@ -1,12 +1,14 @@
 
 struc strlen? str?*
     _assert_string (str)
-    . = (lengthof (str))
+    redefine . (lengthof (str))
 end struc
 
 struc strcat? str1?*, str2?*
-    _assert_string (str1), (str2)
-    . = (string (((str2) shl ((lengthof (str1)) * $08)) or (str1)))
+    str1_eval _evaluate_argument str1
+    str2_eval _evaluate_argument str2
+    _assert_string (str1_eval), (str2_eval)
+    . = (string (((str2_eval) shl ((lengthof (str1_eval)) * $08)) or (str1_eval)))
 end struc
 
 struc strcmp? str1?*, str2?*
@@ -27,38 +29,38 @@ struc strcmp? str1?*, str2?*
     end repeat
 end struc
 
-macro strin? str1?*, str2?*, retidx?*
+struc strin? str1?*, str2?*
     local str2_mask
     _assert_string (str1), (str2)
     str2_mask = ($01 shl (lengthof (str2) * $08)) - $01
-    retidx = $00
+    . = $00
     if ((lengthof (str1)) >= (lengthof (str2)))
         local retcmp
         repeat (((lengthof (str1)) - (lengthof (str2))) + $01)
-            strcmp (string (((str1) shr ((% - $01) * $08)) and str2_mask)), (str2), retcmp
+            retcmp strcmp (string (((str1) shr ((% - $01) * $08)) and str2_mask)), (str2)
             if (~(retcmp))
-                retidx = %
+                . = %
                 break
             end if
         end repeat
     end if
-end macro
+end struc
 
-macro strrin? str1?*, str2?*, retidx?*
+struc strrin? str1?*, str2?*
     local last_index, skip_str
     _assert_string (str1), (str2)
-    retidx = $00
+    . = $00
     last_index = $00
     skip_str = (str1)
     while ($01)
-        retidx = retidx + last_index
+        . = . + last_index
         skip_str = string ((skip_str) shr ($08 * last_index))
-        strin skip_str, str2, last_index
+        last_index strin skip_str, str2
         if (~(last_index))
             break
         end if
     end while
-end macro
+end struc
 
 ;; TODO HANDLE ERROR ;;
 macro strsub? str?*, pos?*, len?*, retstr?*
@@ -70,43 +72,43 @@ macro strsub? str?*, pos?*, len?*, retstr?*
 end macro
 ;; TODO HANDLE ERROR ;;
 
-macro _strcvtcase? str?*, retstr?*, head?*, tail?*
+struc _strcvtcase? str?*, head?*, tail?*
     local char
-    retstr = $00
+    . = $00
     repeat (lengthof (str))
         char = ((str shr ((% - $01) * $08)) and $FF)
         if ((char >= head) & (char <= tail))
             char = (char xor $20)
         end if
-        retstr = ((retstr shl $08) or (char))
+        . = ((. shl $08) or (char))
     end repeat
-    retstr = (retstr bswap (lengthof (string (retstr))))
-end macro
+    . = (. bswap (lengthof (string (.))))
+end struc
 
-iterate <func,head,tail>, strupr,'a','z',\
+iterate <pred,head,tail>, strupr,'a','z',\
                           strlwr,'A','Z'
-    macro func? str?*, retstr?*
+    struc pred? str?*
         _assert_string (str)
-        _strcvtcase str, retstr, head, tail
-    end macro
+        . _strcvtcase str, head, tail
+    end struc
 end iterate
 
-macro strrep? str?*, rep?*, wth?*, retstr?*
+struc strrep? str?*, rep?*, wth?*
     local reppos, lenrep, lenwth, temp1, temp2
     lenrep = (lengthof (rep))
     lenwth = (lengthof (wth))
     temp1  = str
-    retstr   = $00
+    . = $00
     while ($01)
-        strin temp1, rep, reppos
-        if ~ (reppos)
+        reppos strin temp1, rep
+        if (~(reppos))
             break
         end if
         temp2 = (temp1 shr ((reppos - $01 + lenrep)  * $08))
         temp1 = (temp1 and (($01 shl ((reppos - $01) * $08)) - $01))
-        strcat string (temp1), wth, temp1
-        strcat string (retstr), temp1, retstr
+        temp1 strcat string (temp1), wth
+        .     strcat string (.), temp1
         temp1 = string (temp2)
     end while
-    strcat string (retstr), temp1, retstr
-end macro
+    . strcat string (.), temp1
+end struc

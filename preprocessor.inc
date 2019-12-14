@@ -239,7 +239,8 @@ _single_line_macro? := $00
 namespace _single_line_macro?
 end namespace
 
-; Single-Line macro is defined as case-insensitive symbol
+; Single-Line macro is defined as case-insensitive symbol.
+; Single-Line macro act like C-function. Parameter must have a defined type.
 macro _add_single_line_macro? list?*&
     namespace _single_line_macro?
         iterate <func*,pred*>, list
@@ -251,15 +252,6 @@ end macro
 _add_single_line_macro STRLEN,strlen, STRCAT,strcat, STRCMP,strcmp,  STRIN, strin,\
                        STRRIN,strrin, STRSUB,strsub, STRUPR,strupr, STRLWR,strlwr,\
                        STRREP,strrep
-
-struc _compute_single_line_macro_argument? list?*&
-    iterate argument, list
-        test _replace_symbols_operator argument
-        test_2 _rpn_builder, test
-        test_3 _rpn_evaluator test_2
-        db test_3
-    end iterate
-end struc
 
 struc _expand_single_line_macro? line?*&
     local function, callargs, matched, strip, return, stream, cparen
@@ -279,13 +271,11 @@ struc _expand_single_line_macro? line?*&
                 else rawmatch =), item
                     cparen = cparen - $01
                     if (~(cparen))
-                        match list, callargs
-                            ;abc _compute_single_line_macro_argument list
+                        irpv list, callargs ; faster than match
                             return pred list
-                        end match
+                        end irpv
                         restore function, callargs, stream, cparen
                         match insert, stream
-                            strip = $01
                             if (return eqtype $00)
                                 repeat $01, i:(return)
                                     insert _insert_token i
@@ -302,6 +292,7 @@ struc _expand_single_line_macro? line?*&
                                 insert _insert_token pool_entry
                             end if
                         end match
+                        strip = $01
                     else if (cparen < $00)
                         err "syntax error: parenthesis not properly balanced"
                     end if

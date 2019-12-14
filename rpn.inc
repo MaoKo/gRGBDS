@@ -46,7 +46,7 @@ struc _rpn_builder? polynomial?, expression?*&
             else rawmatch =), item
                 present = $00
                 irpv operator, stack
-                    indx (((%%) - (%)) + $01) ; reverse
+                    indx (((%%) - (%)) + $01) ; reverse ordering
                     restore stack
                     rawmatch =operator, (
                         present = $01
@@ -60,7 +60,7 @@ struc _rpn_builder? polynomial?, expression?*&
             else
                 if (definite _rpn_symbols.item)
                     irpv operator, stack
-                        indx (((%%) - (%)) + $01) ; reverse
+                        indx (((%%) - (%)) + $01) ; reverse ordering
                         rawmatch =(, operator
                             break
                         else
@@ -101,19 +101,19 @@ struc _rpn_evaluator? expression?*
                 if (~(stack_defined))
                     err "_rpn_evaluator: invalid expression `", (`expression), "`"
                 end if
-                operand_1 = stack
+                operand_2 = stack ; FIFO ordering
                 restore stack
                 match =__unary_neg, item
-                    result = ((not operand_1) + $01)
+                    result = ((not operand_2) + $01)
 ;               else match =__unary_add, item
-;                   result = (+ operand_1)
+;                   result = (+ operand_2)
                 else match =__unary_sub, item
-                    result = (- operand_1)
+                    result = (- operand_2)
                 else match =__unary_not, item
-                    result = (not operand_1)
+                    result = (not operand_2)
                 else
                     relational = $01
-                    operand_2  = stack
+                    operand_1  = stack
                     restore stack
                     iterate <operator,builtin>,  __mul,  *, __div,  /, __mod,mod,\
                                                  __shl,shl, __shr,shr,\
@@ -140,8 +140,8 @@ struc _rpn_evaluator? expression?*
                         end iterate
                     end if
                 end match
-                irpv pvalue, .
-                    define stack pvalue
+                irpv computed, .
+                    define stack computed
                 end irpv
             else
                 stack_defined = $01
