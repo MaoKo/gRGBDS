@@ -1,31 +1,31 @@
 
-macro strlen? str?*, retstr?*
+struc strlen? str?*
     _assert_string (str)
-    retstr = (lengthof (str))
-end macro
+    . = (lengthof (str))
+end struc
 
-macro strcat? str1?*, str2?*, retstr?*
+struc strcat? str1?*, str2?*
     _assert_string (str1), (str2)
-    retstr = (string (((str2) shl ((lengthof (str1)) * $08)) or (str1)))
-end macro
+    . = (string (((str2) shl ((lengthof (str1)) * $08)) or (str1)))
+end struc
 
-macro strcmp? str1?*, str2?*, retstr?*
+struc strcmp? str1?*, str2?*
     local max_size?, ch1?, ch2?
     _assert_string (str1), (str2)
     max_size = (lengthof (str1))
     if (max_size < (lengthof (str2)))
         max_size = (lengthof (str2))
     end if
-    retstr = $00
+    . = $00
     repeat max_size
         ch1 = (((str1) shr ((% - $01) * $08)) and $FF)
         ch2 = (((str2) shr ((% - $01) * $08)) and $FF)
-        if ~ (ch1 eq ch2)
-            retstr = (ch1 - ch2)
+        if (~(ch1 eq ch2))
+            . = (ch1 - ch2)
             break
         end if
     end repeat
-end macro
+end struc
 
 macro strin? str1?*, str2?*, retidx?*
     local str2_mask

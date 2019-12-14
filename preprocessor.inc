@@ -252,6 +252,15 @@ _add_single_line_macro STRLEN,strlen, STRCAT,strcat, STRCMP,strcmp,  STRIN, stri
                        STRRIN,strrin, STRSUB,strsub, STRUPR,strupr, STRLWR,strlwr,\
                        STRREP,strrep
 
+struc _compute_single_line_macro_argument? list?*&
+    iterate argument, list
+        test _replace_symbols_operator argument
+        test_2 _rpn_builder, test
+        test_3 _rpn_evaluator test_2
+        db test_3
+    end iterate
+end struc
+
 struc _expand_single_line_macro? line?*&
     local function, callargs, matched, strip, return, stream, cparen
     redefine function
@@ -270,11 +279,13 @@ struc _expand_single_line_macro? line?*&
                 else rawmatch =), item
                     cparen = cparen - $01
                     if (~(cparen))
-                        irpv list, callargs
+                        match list, callargs
+                            ;abc _compute_single_line_macro_argument list
                             return pred list
-                        end irpv
+                        end match
                         restore function, callargs, stream, cparen
                         match insert, stream
+                            strip = $01
                             if (return eqtype $00)
                                 repeat $01, i:(return)
                                     insert _insert_token i
@@ -292,10 +303,11 @@ struc _expand_single_line_macro? line?*&
                             end if
                         end match
                     else if (cparen < $00)
+                        err "syntax error: parenthesis not properly balanced"
                     end if
                 end rawmatch
                 if (matched) & (~(cparen))
-                    err "" 
+                    err "syntax error: left parenthesis '(' not follow the function call" 
                 end if
                 matched = $00
             end match
@@ -321,7 +333,7 @@ struc _expand_single_line_macro? line?*&
         end if
     end irps
     match pred, function
-        err ""
+        err "syntax error: missing arguments to the function '", (`pred), "'"
     end match
 end struc
 
