@@ -3,19 +3,17 @@ iterate <type,value>, string,"", numeric,$00, float,0.0f
     macro _assert_#type? line?*&
         iterate text, line
             if (~((text) eqtype value))
-                local ident, target
+                local macro_name, ident, target
                 ident _fasmg_identifier text
                 redefine target text
-                if (ident = __FASMG_IDENTIFIER)
-                    irpv real, text
-                        reverse
-                        redefine target real
-                        break
-                    end irpv
+                if (ident = __FASMG_IDENTIFIER) & (~(value eqtype 0.0f))
+                    eval "redefine target """, text, """"
                 end if
-                irpv _, target
-                    error "_assert_type", <"The parameter ", (`_), " must be of type ", (`type)>
-                end irpv
+                match _, target
+                    _
+                    ;eval "macro_name = ""_assert_", (`type), """"
+                    ;error macro_name, <"The parameter ", (_), " must be of type ", (`type)>
+                end match
             end if
         end iterate
     end macro
