@@ -21,13 +21,8 @@ include "forward.inc"
 include "itoa_base.inc"
 include "error.inc"
 
-;A = 5
-;_assert_string A
 
-a _itoa_base -255, 10
-display a, $0A
-
-;    display "I = ", `i, $A
+_assert_string 5.4
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)

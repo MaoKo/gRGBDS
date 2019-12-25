@@ -2,7 +2,7 @@
 macro error? macro_name?*, messages?*&
     local line, ident
     eval "ident _fasmg_identifier ", macro_name
-    line _itoa_base_core __line__, $0A
+    line _itoa_base __line__, $0A
     display "**** ERROR DETECTED ****", string ($0A0D)
     display "**** FILE : ", __source__, " ****", string($0A0D)
     display "**** LINE : ", line, " ****", string ($0A0D)

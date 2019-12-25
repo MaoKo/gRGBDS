@@ -1,22 +1,28 @@
 
-iterate <type,value>, string,"", numeric,$00, float,0.0f
-    macro _assert_#type? line?*&
+iterate <type*,value*>, string,"", numeric,$00, float,0.0f
+    macro _assert_#type?: line?*&
         iterate text, line
             if (~((text) eqtype value))
                 local macro_name, ident, target
-                ident _fasmg_identifier text
                 redefine target text
-                if (ident = __FASMG_IDENTIFIER) & (~(value eqtype 0.0f))
-                    eval "redefine target """, text, """"
+                ident _fasmg_identifier text
+                if (ident = __FASMG_IDENTIFIER) & (~((text) eqtype 0.0f))
+                    if ((text) eqtype $00)
+                        target _itoa_base (text), $0A
+                    end if
+                    eval "redefine target """, target, """"
+                else if ((text) eqtype $00) | ((text) eqtype 0.0f)
+                    redefine target (`text)
                 end if
                 match _, target
-                    _
-                    ;eval "macro_name = ""_assert_", (`type), """"
-                    ;error macro_name, <"The parameter ", (_), " must be of type ", (`type)>
+                    eval "macro_name = ""_assert_", (`type), """"
+                    error macro_name, <"The parameter ", (_), " must be of type ", (`type), ".">
                 end match
             end if
         end iterate
     end macro
+
+    ; TODO
     match =string?, type
         macro _assert_string_not_empty? line?*&
             iterate string, line
