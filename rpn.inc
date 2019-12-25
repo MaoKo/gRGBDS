@@ -22,22 +22,22 @@ namespace _rpn_symbols?
         define _list_operator? oprt
     end iterate
     macro enqueue? queue?*, operator?*
+        local replace
+        redefine replace operator
         rawmatch =__unary_add?, operator ; __unary_add get vanish during this step
-            queue _insert_token $00 __add
-        else
-            queue _insert_token operator
+            redefine replace $00 __add
         end rawmatch
-        queue _insert_token ; ** insert empty ** ;
+        queue _insert_token replace _insert_token.EMPTY
     end macro
 end namespace
 
 ; Shunting-Yard Algorithm
 struc _rpn_builder? polynomial?, expression?*&
-    local stack, present, empty
+    local stack, present
     rawmatch _, polynomial
         polynomial = $00
     end rawmatch
-    redefine empty
+    redefine stack
     redefine .
     irps item, ( expression ) ; avoid the need to pop-off all the stack operator
         rawmatch _, item
@@ -46,7 +46,7 @@ struc _rpn_builder? polynomial?, expression?*&
             else rawmatch =), item
                 present = $00
                 irpv operator, stack
-                    indx (((%%) - (%)) + $01) ; reverse ordering
+                    reverse
                     restore stack
                     rawmatch =operator, (
                         present = $01
@@ -55,12 +55,12 @@ struc _rpn_builder? polynomial?, expression?*&
                     _rpn_symbols.enqueue ., operator
                 end irpv
                 if (~(present))
-                    err "syntax error: missing left parenthesis"
+                    error "_rpn_builder", "syntax error: missing left parenthesis."
                 end if
             else
                 if (definite _rpn_symbols.item)
                     irpv operator, stack
-                        indx (((%%) - (%)) + $01) ; reverse ordering
+                        reverse
                         rawmatch =(, operator
                             break
                         else
@@ -68,7 +68,8 @@ struc _rpn_builder? polynomial?, expression?*&
                                 break
                             else if (_rpn_symbols.operator._precedence = _rpn_symbols.item._precedence)
                                 if (_rpn_symbols.operator._associativity = NASSOC)
-                                    err "syntax error: operator '", (`operator), "' is not-associative"
+                                    error "_rpn_builder", \
+                                            <"syntax error: operator '", (`operator), "' is not-associative.">
                                 else if (_rpn_symbols.operator._associativity = LASSOC))
                                     break
                                 end if
@@ -84,35 +85,39 @@ struc _rpn_builder? polynomial?, expression?*&
                             polynomial = $01
                         end rawmatch
                     end if
-                    . _insert_token item empty
+                    . _insert_token item _insert_token.EMPTY
                 end if
             end rawmatch
         end rawmatch
     end irps
+    match _, stack
+        error "_rpn_builder", "syntax error: stack not empty."
+    end match
 end struc
 
 struc _rpn_evaluator? expression?*
     local stack, stack_defined, relational, relational_equ, operand_1, operand_2
-    stack_defined = $00
+    redefine stack
     redefine .
     irps item, expression
         rawmatch _, item
             if (defined _rpn_symbols.item)
-                if (~(stack_defined))
-                    err "_rpn_evaluator: invalid expression `", (`expression), "`"
-                end if
-                operand_2 = stack ; FIFO ordering
+                match,stack
+                    error "_rpn_evaluator", <"missing operand for operator: ", (`item), ".">
+                end match
+                operand_2 = stack
                 restore stack
                 match =__unary_neg, item
                     result = ((not operand_2) + $01)
-;               else match =__unary_add, item
-;                   result = (+ operand_2)
                 else match =__unary_sub, item
                     result = (- operand_2)
                 else match =__unary_not, item
                     result = (not operand_2)
                 else
                     relational = $01
+                    match,stack
+                        error "_rpn_evaluator", <"missing operand for operator: ", (`item), ".">
+                    end match
                     operand_1  = stack
                     restore stack
                     iterate <operator,builtin>,  __mul,  *, __div,  /, __mod,mod,\
@@ -144,10 +149,15 @@ struc _rpn_evaluator? expression?*
                     define stack computed
                 end irpv
             else
-                stack_defined = $01
                 define stack item
             end if
         end rawmatch
     end irps
+    irpv _, stack
+        if (%% > $02)
+            error "_rpn_evaluator", <"invalid expression: `", (`expression), "`.">
+            break
+        end if
+    end irpv 
     . = stack
 end struc

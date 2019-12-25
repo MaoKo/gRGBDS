@@ -14,10 +14,10 @@ iterate <type*,value*>, string,"", numeric,$00, float,0.0f
                 else if ((text) eqtype $00) | ((text) eqtype 0.0f)
                     redefine target (`text)
                 end if
-                match _, target
-                    eval "macro_name = ""_assert_", (`type), """"
+                eval "macro_name = ""_assert_", (`type), """"
+                irpv _, target
                     error macro_name, <"The parameter ", (_), " must be of type ", (`type), ".">
-                end match
+                end irpv
             end if
         end iterate
     end macro

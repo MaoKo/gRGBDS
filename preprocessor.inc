@@ -271,9 +271,9 @@ struc _expand_single_line_macro? line?*&
                 else rawmatch =), item
                     cparen = cparen - $01
                     if (~(cparen))
-                        irpv list, callargs ; faster than match
+                        match list, callargs
                             return pred list
-                        end irpv
+                        end match
                         restore function, callargs, stream, cparen
                         match insert, stream
                             if (return eqtype $00)
@@ -284,7 +284,7 @@ struc _expand_single_line_macro? line?*&
                                 if (return eqtype "")
                                     _eval_string new_string, return
                                     _add_constant_pool pool_entry, new_string
-                                else if (return eqtype 0.0)
+                                else if (return eqtype 0.0f)
                                     _add_constant_pool pool_entry, return
                                 else
                                     err "unknwown type"

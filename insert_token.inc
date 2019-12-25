@@ -1,11 +1,14 @@
 
+_insert_token? := $00
+redefine _insert_token?.EMPTY?
+
 struc _insert_token? source?&
-    local prefix, suffix, empty
-    define  .   ; force variable
-    restore .   ; force variable
+    local prefix, suffix, insert
+    define  .                       ; force variable ;
+    restore .                       ; force variable ;
     redefine prefix ". reequ "
     redefine suffix ""
-    redefine empty
+    insert = $00
     irpv _, .
         indx (%%)
         redefine suffix (`_)
@@ -13,11 +16,14 @@ struc _insert_token? source?&
     end irpv
     match _, source
         suffix reequ suffix, (`_)
-        match __insert= , source
-            suffix reequ suffix, (" empty")
+        match __insert_space= , source
+            insert = $01
         end match
     else
-        suffix reequ suffix, (" empty")
+        insert = $01
     end match
+    if (insert)
+        suffix reequ suffix, (" _insert_token.EMPTY ")
+    end if
     eval prefix, suffix
 end struc
