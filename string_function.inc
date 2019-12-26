@@ -1,14 +1,12 @@
 
 struc strlen? str?*
     _assert_string (str)
-    redefine . (lengthof (str))
+    . = (lengthof (str))
 end struc
 
 struc strcat? str1?*, str2?*
-    str1_eval _evaluate_argument str1
-    str2_eval _evaluate_argument str2
-    _assert_string (str1_eval), (str2_eval)
-    . = (string (((str2_eval) shl ((lengthof (str1_eval)) * $08)) or (str1_eval)))
+    _assert_string (str1), (str2)
+    . = (string (((str2) shl ((lengthof (str1)) * $08)) or (str1)))
 end struc
 
 struc strcmp? str1?*, str2?*
@@ -37,9 +35,9 @@ struc strin? str1?*, str2?*
     if ((lengthof (str1)) >= (lengthof (str2)))
         local retcmp
         repeat (((lengthof (str1)) - (lengthof (str2))) + $01)
-            retcmp strcmp (string (((str1) shr ((% - $01) * $08)) and str2_mask)), (str2)
+            retcmp strcmp (string (((str1) shr (((%) - $01) * $08)) and str2_mask)), (str2)
             if (~(retcmp))
-                . = %
+                . = (%)
                 break
             end if
         end repeat

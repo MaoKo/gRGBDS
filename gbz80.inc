@@ -62,6 +62,10 @@ macro halt?
 end macro
 
 macro rst? vector?*
+    
+end macro
+
+macro rst? vector?*
     local expression, absolute
     _rpn_builder expression, absolute, vector
     if (absolute)

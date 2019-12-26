@@ -1,44 +1,44 @@
 
 _constant_pool? := $00
 namespace _constant_pool?
-    iterate kind, string,float
-        _constant_pool?._#kind? := $00
-        namespace _#kind?
+    iterate type*, string,float
+        _constant_pool?._#type? := $00
+        namespace _#type?
             _index = $00
         end namespace
     end iterate
 end namespace
 
-macro _add_constant_pool? result?*, value?*
+struc _add_constant_pool? value?*
     local type, found
-    result equ _constant_pool._
-    type   equ
-    found  equ
-    iterate <literal,target>, "",string, 0.0,float
+    redefine . _constant_pool._
+    redefine type
+    redefine found
+    iterate <literal*,target*>, "",string, 0.0f,float
         if (value eqtype literal)
-            type equ target
+            redefine type target
             break
         end if
     end iterate
     match kind, type
         repeat (_constant_pool._#kind._index), i:($00)
             if (value = _constant_pool._#kind.i)
-                found equ kind.i
+                redefine found kind.i
                 break
             end if
         end repeat
         match,found
             repeat ($01), i:(_constant_pool._#kind._index)
                 _constant_pool._#kind.i = value
-                found equ kind.i
+                redefine found kind.i
             end repeat
             _constant_pool._#kind._index = _constant_pool._#kind._index + $01
         end match
-        _insert_token result, found
+        . _insert_token found
     else
-        err "syntax error: constant pool type unknown"
+        error "_add_constant_pool", "syntax error: constant pool type unknown."
     end match
-end macro
+end struc
 
 _symbols_operator? := $00
 namespace _symbols_operator?
@@ -197,35 +197,37 @@ macro _subround_string? result?*, line?*&
     end irps
 end macro
 
-macro _eval_each_string? result?*, line?*&
-    local check, new_string, pool_entry, add_entry, wrap_item
-    result equ
-    irps item[+space|+ident], line
-        wrap_item equ item
-        _fasmg_identifier check, item
-        if (check) | (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
-            add_entry = $00
-            if (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
-                _eval_string new_string, item
-                add_entry = $01
-            else
-                match =end?, item
-                else match =else?, item
+struc _eval_each_string? line?*&
+    local identifier, new_string, pool_entry, add_entry, wrap
+    redefine .
+    irps item, line
+        redefine wrap item
+        rawmatch _, item
+            identifier _fasmg_identifier item
+            if (identifier) | (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
+                add_entry = $00
+                if (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
+                    _eval_string new_string, item
+                    add_entry = $01
                 else
-                    if (definite item) & (item eqtype "")
-                        _eval_string new_string, item
-                        add_entry = $01
-                    end if
-                end match
+                    match =end?, item
+                    else match =else?, item
+                    else
+                        if (definite item) & (item eqtype "")
+                            _eval_string new_string, item
+                            add_entry = $01
+                        end if
+                    end match
+                end if
+                if (add_entry)
+                    pool_entry _add_constant_pool new_string
+                    wrap reequ pool_entry
+                end if
             end if
-            if (add_entry)
-                _add_constant_pool pool_entry, new_string
-                wrap_item equ pool_entry
-            end if
-        end if
-        _insert_token result, wrap_item
+        end rawmatch
+        . _insert_token wrap
     end irps
-end macro
+end struc
 
 macro _expand_macro_parameter? result?*, line?*&
     if (~(_builder._in_macro)) | (~(_builder._in_rept))
@@ -241,7 +243,6 @@ namespace _single_line_macro?
 end namespace
 
 ; Single-Line macro is defined as case-insensitive symbol.
-; Single-Line macro act like C-function. Parameter must have a defined type.
 macro _add_single_line_macro? list?*&
     namespace _single_line_macro?
         iterate <func*,pred*>, list
@@ -287,11 +288,11 @@ struc _expand_single_line_macro? line?*&
                             else
                                 if (return eqtype "")
                                     _eval_string new_string, return
-                                    _add_constant_pool pool_entry, new_string
+                                    pool_entry _add_constant_pool new_string
                                 else if (return eqtype 0.0f)
-                                    _add_constant_pool pool_entry, return
+                                    pool_entry _add_constant_pool return
                                 else
-                                    err "unknwown type"
+                                    error "_expand_single_line_macro", "unknwown returned type."
                                 end if
                                 insert _insert_token pool_entry
                             end if

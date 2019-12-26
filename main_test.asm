@@ -10,7 +10,6 @@ include "irps.inc"
 
 include "preprocessor.inc"
 include "rpn.inc"
-include "evaluate_argument.inc"
 include "string_function.inc"
 include "fasmg_identifier.inc"
 ;include "sections.inc"
@@ -21,10 +20,12 @@ include "forward.inc"
 include "itoa_base.inc"
 include "error.inc"
 
-ret _expand_single_line_macro STRLEN("abc" 1 __add __string)
-match _, ret
-_
-end match)
+include "string.inc"
+include "switch.inc"
+
+A=255
+abc _eval_string "\tA\nB{D+H}"
+display "'", abc, "'", $0A
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)

@@ -4,8 +4,8 @@ redefine _insert_token?.EMPTY?
 
 struc _insert_token? source?&
     local prefix, suffix, insert
-    define  .                       ; force variable ;
-    restore .                       ; force variable ;
+    define  .
+    restore .
     redefine prefix ". reequ "
     redefine suffix ""
     insert = $00

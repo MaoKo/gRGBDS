@@ -7,13 +7,13 @@ macro switch? item?*
     used_default    = $00
     already_match   = $00
 
-    list_value equ
-    restore list_value
+    redefine list_value
+    restore  list_value
 
     macro case? value?*
         irpv it, list_value
             if (it eq (value))
-                err "syntax error: case value redifinition"
+                error "switch::case", "syntax error: case value redifinition."
             end if
         end irpv
         list_value equ value
@@ -25,7 +25,7 @@ macro switch? item?*
 
     macro default?
         if (used_default)
-            err "syntax error: default label has been encounter more than one"
+            error "default::case", "syntax error: default label has been encounter more than one."
         end if
         default_match = $01
         used_default  = $01
@@ -33,22 +33,22 @@ macro switch? item?*
 
     macro switch_statement? line?*&
         local buffer, range
-        buffer equ line
+        buffer reequ line
         while $01
             match =case? _, buffer
                 match value =: rest, _
-                    buffer equ rest
-                    range equ value
+                    range reequ value
+                    buffer reequ rest
                 else match value =:, _
-                    buffer equ
-                    range equ value
+                    range reequ value
+                    redefine buffer
                 else
-                    err "syntax error: case must be followed by a ':' character"
+                    error "switch", "syntax error: case must be followed by a ':' character."
                     break
                 end match
                 match low =.=.=. high, range
-                    if (high < low)
-                        err "syntax error: bad case range"
+                    if (high <= low)
+                        error "switch", "syntax error: bad case range."
                         break
                     end if
                     repeat ((high - low) + $01), i:(low)
@@ -59,25 +59,27 @@ macro switch? item?*
                 end match
             else match =default? _, buffer
                 match =: rest, _
-                    buffer equ rest
+                    buffer reequ rest
                 else match =:, _
-                    buffer equ
+                    redefine buffer
                 else
-                    err "syntax error: default must be follow by a ':' character"
+                    error "switch", "syntax error: default must be follow by a ':' character."
                     break
                 end match
                 default
             else
-                match =break?, buffer
-                    if (case_match)
-                        already_match = $01
-                    end if
-                    case_match    = $00
-                    default_match = $00
-                else match =case?, buffer
-                    err "syntax error: case cannot be alone"
-                else match =default?, buffer
-                    err "syntax error: default cannot be alone"
+                match _, buffer
+                    rawmatch =break?, _
+                        if (case_match)
+                            already_match = $01
+                        end if
+                        case_match    = $00
+                        default_match = $00
+                    else rawmatch =case?, _
+                        error "switch", "syntax error: case cannot be alone."
+                    else rawmatch =default?, _
+                        error "switch", "syntax error: default cannot be alone."
+                    end rawmatch
                 end match
                 break
             end match
@@ -117,9 +119,9 @@ macro switch? item?*
         end match
         if (~(end_reach))
             match _, line
-                match =macro? remain, line
-                    err "syntax error: macro can't be declared here"
-                end match
+                rawmatch =macro? parameter, _
+                    error "switch", "syntax error: macro can't be declared here."
+                end rawmatch
                 switch_statement line
             end match
         else
