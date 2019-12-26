@@ -1,18 +1,18 @@
 
 iterate <type*,value*>, string,"", numeric,$00, float,0.0f
-    macro _assert_#type?: line?*&
-        iterate text, line
-            if (~((text) eqtype value))
+    macro _assert_#type?: expressions?*&
+        iterate expression, expressions
+            if (~((expression) eqtype value))
                 local macro_name, identifier, target
-                redefine target text
-                identifier _fasmg_identifier text
-                if (identifier = __FASMG_IDENTIFIER) & (~((text) eqtype 0.0f))
-                    if ((text) eqtype $00)
-                        target _itoa_base (text), $0A
+                redefine target expression
+                identifier _fasmg_identifier expression
+                if (identifier = __FASMG_IDENTIFIER) & (~((expression) eqtype 0.0f))
+                    if ((expression) eqtype $00)
+                        target _itoa_base (expression), $0A
                     end if
                     eval "redefine target """, target, """"
-                else if ((text) eqtype $00) | ((text) eqtype 0.0f)
-                    redefine target (`text)
+                else if ((expression) eqtype $00) | ((expression) eqtype 0.0f)
+                    redefine target (`expression)
                 end if
                 eval "macro_name = ""_assert_", (`type), """"
                 irpv _, target
@@ -21,6 +21,7 @@ iterate <type*,value*>, string,"", numeric,$00, float,0.0f
             end if
         end iterate
     end macro
+
 
     ; TODO
     match =string?, type
@@ -44,16 +45,8 @@ iterate <type*,value*>, string,"", numeric,$00, float,0.0f
     end match
 end iterate
 
-macro _assert_fasmg_identifier? token?    
-    local valid
-    _fasmg_identifier valid, token
-    if (~(valid))
-        err "The token '", (`token) "' is not a valid identifier"
-    end if
+macro _assert_element? element?*, expressions?*&
+    iterate expression*, expressions
+    end iterate
 end macro
 
-;macro _assert_defined_field? namespace?*, field?*
-;    if (elementsof (field)) & (field relativeto namespace._undefined_field)
-;        err "syntax error: field '", (`field), "' have an undefined value"
-;    end if
-;end macro

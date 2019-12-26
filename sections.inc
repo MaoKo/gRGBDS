@@ -130,7 +130,7 @@ macro section? name?*, type?*, options?&
     else match _, type
         kind   = _sections._
     end match
-    if ((kind) metadata $01 relativeto _sections._section_type) & ((kind)  element $01 eq (kind))
+    if ((kind) metadata $01 relativeto _sections._section_type) & ((kind) element $01 eq (kind))
         iterate option, options
             if (%% > _sections._LIMIT_OPTION)
                 err "invalid operand: too many section options"
