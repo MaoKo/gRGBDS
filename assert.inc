@@ -45,8 +45,12 @@ iterate <type*,value*>, string,"", numeric,$00, float,0.0f
     end match
 end iterate
 
-macro _assert_element? element?*, expressions?*&
+macro _assert_element? singleton?*, expressions?*&
     iterate expression*, expressions
+        if (~(((expression) metadata $01 relativeto (singleton)) &\
+              ((expression) element $01 eq (expression))))
+            error "_assert_element", "TODO ERROR MESSAGE"
+        end if
     end iterate
 end macro
 

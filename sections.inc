@@ -1,8 +1,8 @@
 
 _sections? := $00
 namespace _sections?
-    _LIMIT_OPTION? :=  $02
     _NULL_SECTION? := -$01
+    _LIMIT_OPTION? :=  $02
     element _section_type?
     iterate <type,value>, ROM0, $03, ROMX, $02, VRAM,$01, SRAM,$05,\
                           WRAM0,$00, WRAMX,$05,  OAM,$07, HRAM,$04
