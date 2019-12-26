@@ -89,7 +89,7 @@ macro _handle_defined_data?
                     if (~(__native))
                         err "program error: section '", name, "' cannot contain code or data (nor ROM0 or ROMX)"
                     end if
-                    _rpn_builder rpn_expression, polynomial, line
+                    rpn_expression _rpn_builder polynomial, line
                     ;if (polynomial) ; if polynomial are present let the linker do the computation
                     ;    _request_patch patch_space, rpn_expression, _sections._patchs.type
                     ;    _patchs equ patch_space

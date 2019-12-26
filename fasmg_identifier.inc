@@ -1,7 +1,7 @@
 
 define __identifier?
-iterate kind, TOKEN, NUMERIC, IDENTIFIER
-    __FASMG_#kind? := ((%) - $01)
+iterate type, TOKEN, NUMERIC, IDENTIFIER
+    __FASMG_#type? := ((%) - $01)
 end iterate
 
 struc _fasmg_identifier? token?*&

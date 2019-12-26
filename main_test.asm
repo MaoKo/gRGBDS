@@ -21,10 +21,10 @@ include "forward.inc"
 include "itoa_base.inc"
 include "error.inc"
 
-result _rpn_builder, 1 __sub __unary_add 5
-result_2 _rpn_evaluator 5 __add
-result_3 _itoa_base result_2, $0A
-display result_3, $A
+ret _expand_single_line_macro STRLEN("abc" 1 __add __string)
+match _, ret
+_
+end match)
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)

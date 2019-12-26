@@ -3,10 +3,10 @@ iterate <type*,value*>, string,"", numeric,$00, float,0.0f
     macro _assert_#type?: line?*&
         iterate text, line
             if (~((text) eqtype value))
-                local macro_name, ident, target
+                local macro_name, identifier, target
                 redefine target text
-                ident _fasmg_identifier text
-                if (ident = __FASMG_IDENTIFIER) & (~((text) eqtype 0.0f))
+                identifier _fasmg_identifier text
+                if (identifier = __FASMG_IDENTIFIER) & (~((text) eqtype 0.0f))
                     if ((text) eqtype $00)
                         target _itoa_base (text), $0A
                     end if

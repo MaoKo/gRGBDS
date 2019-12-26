@@ -1,7 +1,8 @@
 
-_irps_line? := $00
-namespace _irps_line?
-    define __MODULUS % ; ensure to not expand even when in loop
+_irps_special? := $00
+_irps_cache? := $00
+namespace _irps_special
+    redefine __MODULUS %    ; ensure to not expand even when in loop
 end namespace
 
 macro _irps_core? parameter?*, text?*&
@@ -10,14 +11,14 @@ macro _irps_core? parameter?*, text?*&
     active = $00
     irpv _, buffer
         repeat $01, i:(`_)
-            if (~(definite _irps_line.i.active))
-                restore _irps_line.i.active
-                define  _irps_line.i.active
-                _irps_line.i.active = $00
-                define _irps_line.i token
+            if (~(definite _irps_cache.i.active))
+                restore _irps_cache.i.active
+                define  _irps_cache.i.active
+                _irps_cache.i.active = $00
+                redefine _irps_cache.i token
                 active = $01
             end if
-            final equ _irps_line.i
+            final reequ _irps_cache.i
         end repeat
     end irpv
     if (active)
@@ -25,7 +26,7 @@ macro _irps_core? parameter?*, text?*&
         match __terminate= ,buffer
             space = $01
         end match
-        match __MODULUS, _irps_line.__MODULUS
+        match __MODULUS, _irps_special.__MODULUS
             while $01
                 match __input?, buffer
                     redefine __prefix?

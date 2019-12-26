@@ -57,7 +57,8 @@ namespace _symbols_operator?
                                     ">",  __gt,,            \
                                     "|",  __or,,            \
                                     "&", __and,,            \
-                                    "!", __unary_not,
+                                    "!", __unary_not,,      \
+                                    "`", __string,
             repeat $01, i:(sop)
                 ?i? = (`sub)
                 rawmatch _, unary
@@ -254,7 +255,7 @@ _add_single_line_macro STRLEN,strlen, STRCAT,strcat, STRCMP,strcmp,  STRIN, stri
                        STRREP,strrep
 
 struc _expand_single_line_macro? line?*&
-    local function, callargs, matched, strip, return, stream, cparen
+    local function, callargs, computed, matched, strip, return, stream, cparen
     redefine function
     redefine stream .
     matched = $00
@@ -272,6 +273,9 @@ struc _expand_single_line_macro? line?*&
                     cparen = cparen - $01
                     if (~(cparen))
                         match list, callargs
+                            computed _rpn_compute list
+                        end match
+                        match list, computed
                             return pred list
                         end match
                         restore function, callargs, stream, cparen
@@ -294,11 +298,13 @@ struc _expand_single_line_macro? line?*&
                         end match
                         strip = $01
                     else if (cparen < $00)
-                        err "syntax error: parenthesis not properly balanced"
+                        error "_expand_single_line_macro",\
+                            <"syntax error: parenthesis not properly balanced.">
                     end if
                 end rawmatch
                 if (matched) & (~(cparen))
-                    err "syntax error: left parenthesis '(' not follow the function call" 
+                    error "_expand_single_line_macro",\
+                            <"syntax error: left parenthesis '(' not follow the function call.">
                 end if
                 matched = $00
             end match
@@ -324,7 +330,7 @@ struc _expand_single_line_macro? line?*&
         end if
     end irps
     match pred, function
-        err "syntax error: missing arguments to the function '", (`pred), "'"
+        error "_expand_single_line_macro", <"syntax error: missing arguments to the function '", (`pred), "'.">
     end match
 end struc
 
