@@ -198,23 +198,24 @@ macro _subround_string? result?*, line?*&
 end macro
 
 struc _eval_each_string? line?*&
-    local identifier, new_string, pool_entry, add_entry, wrap
+    local identifier, new_string, pool_entry, add_entry, char, wrap
     redefine .
     irps item, line
         redefine wrap item
         rawmatch _, item
+            char := ((`item) and $FF)
             identifier _fasmg_identifier item
-            if (identifier) | (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
+            if (identifier) | (char = "'") | (char = '"')   ; we can't do a simply (item eqtype "") eg: if item=+
                 add_entry = $00
-                if (((`item) and $FF) = "'") | (((`item) and $FF) = '"')
-                    _eval_string new_string, item
+                if ((char = "'") | (char = '"')
+                    new_string _eval_string item
                     add_entry = $01
                 else
                     match =end?, item
                     else match =else?, item
                     else
                         if (definite item) & (item eqtype "")
-                            _eval_string new_string, item
+                            new_string _eval_string item
                             add_entry = $01
                         end if
                     end match
@@ -238,11 +239,8 @@ macro _expand_macro_parameter? result?*, line?*&
     err "not yet implemented"
 end macro
 
-_single_line_macro? := $00
-namespace _single_line_macro?
-end namespace
-
 ; Single-Line macro is defined as case-insensitive symbol.
+_single_line_macro? := $00
 macro _add_single_line_macro? list?*&
     namespace _single_line_macro?
         iterate <func*,pred*>, list
@@ -251,9 +249,9 @@ macro _add_single_line_macro? list?*&
     end namespace
 end macro
 
-_add_single_line_macro STRLEN,strlen, STRCAT,strcat, STRCMP,strcmp,  STRIN, strin,\
-                       STRRIN,strrin, STRSUB,strsub, STRUPR,strupr, STRLWR,strlwr,\
-                       STRREP,strrep
+_add_single_line_macro STRLEN,strlen, STRCAT,strcat, STRCMP,strcmp,\
+                       STRIN,  strin, STRRIN,strrin, STRSUB,strsub,\
+                       STRUPR,strupr, STRLWR,strlwr, STRREP,strrep
 
 struc _expand_single_line_macro? line?*&
     local function, callargs, computed, matched, strip, return, stream, cparen
@@ -287,7 +285,7 @@ struc _expand_single_line_macro? line?*&
                                 end repeat
                             else
                                 if (return eqtype "")
-                                    _eval_string new_string, return
+                                    new_string _eval_string return
                                     pool_entry _add_constant_pool new_string
                                 else if (return eqtype 0.0f)
                                     pool_entry _add_constant_pool return

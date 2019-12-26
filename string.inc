@@ -1,8 +1,5 @@
 
 _iterate_string_cache? := $00
-namespace _iterate_string_cache?
-end namespace
-
 macro _core_iterate_string? parameter?*, text?*
     local start, iterator
     _assert_string (text)

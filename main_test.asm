@@ -23,9 +23,9 @@ include "error.inc"
 include "string.inc"
 include "switch.inc"
 
-A=255
-abc _eval_string "\tA\nB{D+H}"
-display "'", abc, "'", $0A
+include "gbz80.inc"
+
+rst $40
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)

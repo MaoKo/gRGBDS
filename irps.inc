@@ -1,10 +1,10 @@
 
 _irps_special? := $00
-_irps_cache? := $00
 namespace _irps_special
     redefine __MODULUS %    ; ensure to not expand even when in loop
 end namespace
 
+_irps_cache? := $00
 macro _irps_core? parameter?*, text?*&
     local buffer, active, token, final, space
     buffer reequ text

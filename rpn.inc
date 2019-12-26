@@ -1,6 +1,5 @@
 
 _rpn_symbols? := $00
-_rpn_cache? := $00
 namespace _rpn_symbols?
     _LASSOC? := $00
     _RASSOC? := $01
@@ -178,6 +177,7 @@ struc _rpn_evaluator? expression?*
     . = stack
 end struc
 
+_rpn_cache? := $00
 struc _rpn_compute expressions?*&
     ; TODO: Add cached rpn expression ;
     local rpn_build, polynomial, rpn_evaluate
