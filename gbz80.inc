@@ -1,4 +1,6 @@
 
+; for full reference see (http://goldencrystal.free.fr/GBZ80Opcodes.pdf)
+
 _cpu_gbz80? := $00
 namespace _cpu_gbz80?
     _NULL_PLACEHOLDER := -$01
@@ -7,8 +9,11 @@ namespace _cpu_gbz80?
     iterate <action*,instructions*>, _INCREMENT,<inc,ldi, pop>,\
                                      _DECREMENT,<dec,ldd,push>
         iterate instruction, instructions
-            instruction := action
+            instruction? := action
         end iterate
+    end iterate
+    iterate <instruction*,pattern*>, bit,01b, res,10b, set,11b
+        instruction? := pattern
     end iterate
     element _register_r08?
     iterate <type*,value*>, A,$07, B,$00, C,$01, D,$02, E,$03, H,$04, L,$05, _Memory_HL,$06
@@ -24,7 +29,7 @@ namespace _cpu_gbz80?
                                  SP,_NULL_PLACEHOLDER,              11b,_NULL_PLACEHOLDER,\
                                  AF,_NULL_PLACEHOLDER,_NULL_PLACEHOLDER,              11b,\
                                  PC,_NULL_PLACEHOLDER,_NULL_PLACEHOLDER,_NULL_PLACEHOLDER
-        element type? : _register_r16 + $00
+        element type? : _register_r16 + (`type) ; debug purpose
         element type?.proxy? :  (_placeholder_1 * p1) +\
                                 (_placeholder_2 * p2) +\
                                 (_placeholder_3 * p3)
@@ -34,7 +39,9 @@ namespace _cpu_gbz80?
             _assert_element,_register_r16, target
             . = ((target.proxy metadata $01) scale index)
             if ((.) = _NULL_PLACEHOLDER)
-                error "retreive_scale", "instruction error: register 16-bit non valid."
+                error "retreive_scale",\
+                            <"instruction error: '", string ((target metadata $01) scale $00),\
+                            "' 16-bit register non valid.">
             end if
         end namespace
     end struc
@@ -44,7 +51,7 @@ namespace _cpu_gbz80?
             match register, target
                 rawmatch      =[ =HL? =], register
                 else rawmatch =( =HL? =), register
-                else rawmatch =[ =HL? =), register
+                else rawmatch =[ =HL? =), register ; support 'all' syntax
                 else rawmatch =( =HL? =], register
                 else
                     . = #register ; get rid of the context associated with 'register'
@@ -102,9 +109,7 @@ end macro
 iterate type*, pop,push
     macro type? r16?*
         local target, proxy
-        match register, r16
-            target = _cpu_gbz80.register
-        end match
+        target _cpu_gbz80.dereference_hl r16
         proxy _cpu_gbz80.retreive_scale target, $03
         db ((11b shl $06) or (proxy shl $04) or (_cpu_gbz80.type shl $02) or (01b))
     end macro
@@ -140,3 +145,13 @@ end macro
 macro ei?
     db (11111011b)
 end macro
+
+iterate type*, bit,res,set
+    macro type? offset?*, r08?*
+        local target
+        _bound_limit offset, $03, UNSIGNED
+        target _cpu_gbz80.dereference_hl r08
+        _assert_element,_cpu_gbz80._register_r08, target
+        db ((11001011b) or (_cpu_gbz80.type shl $06) or (offset shl $03) or (target metadata $01 scale $00))
+    end macro
+end iterate
