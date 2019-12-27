@@ -34,6 +34,16 @@ namespace _cpu_gbz80?
                                 (_placeholder_2 * p2) +\
                                 (_placeholder_3 * p3)
     end iterate
+    condition? := $00
+    namespace condition?
+        ; Not  Zero - NZ
+        ;      Zero -  Z
+        ; Not Carry - NC
+        ;     Carry -  C
+        iterate <cc*,value*>, NZ,00b, Z,01b, NC,10b, C,11b
+            element cc? : value
+        end iterate
+    end namespace
     struc retreive_scale target?*, index?*
         namespace _cpu_gbz80?
             _assert_element,_register_r16, target
