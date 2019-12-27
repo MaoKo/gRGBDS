@@ -14,13 +14,13 @@ namespace _rpn_symbols?
                                 __logical_and,$06,_LASSOC, __logical_or,$06,_LASSOC,\
                                   __unary_not,$07,_RASSOC,\
                                      __string,$08,_RASSOC
-                                
-        oprt? := $00
-        namespace oprt?
-            _precedence?    := precd
-            _associativity? := assoc
-        end namespace
-        define _list_operator? oprt
+        repeat $01, i:(`oprt)
+            ?i? := $00
+            namespace ?i?
+                _precedence?    := precd
+                _associativity? := assoc
+            end namespace
+        end repeat
     end iterate
     macro enqueue? queue?*, operator?*
         local replace
@@ -30,21 +30,11 @@ namespace _rpn_symbols?
         end rawmatch
         queue _insert_token replace _insert_token.EMPTY
     end macro
-    macro symbol_matched?!
-        local identifier, matched
-        matched = $00
-        identifier _fasmg_identifier item
-        if (identifier = __FASMG_IDENTIFIER)
-            if (definite _rpn_symbols.item)
-                matched = $01
-            end if
-        end if
-    end macro
 end namespace
 
 ; Shunting-Yard Algorithm
-struc _rpn_builder? polynomial?, expression?*&
-    local stack, present
+struc _rpn_builder? polynomial?, expression?*
+    local stack, present, identifier
     rawmatch _, polynomial
         polynomial = $00
     end rawmatch
@@ -56,49 +46,54 @@ struc _rpn_builder? polynomial?, expression?*&
                 define stack (
             else rawmatch =), item
                 present = $00
-                irpv operator, stack
+                irpv pushed, stack
                     reverse
                     restore stack
-                    rawmatch =operator, (
+                    rawmatch =pushed, (
                         present = $01
                         break
                     end rawmatch
-                    _rpn_symbols.enqueue ., operator
+                    eval "_rpn_symbols.enqueue ., ", string pushed
                 end irpv
                 if (~(present))
                     error "_rpn_builder", "syntax error: missing left parenthesis."
                 end if
             else
-                _rpn_symbols.symbol_matched
-                if (matched)
-                    irpv operator, stack
-                        reverse
-                        rawmatch =(, operator
-                            break
-                        else
-                            if (_rpn_symbols.operator._precedence > _rpn_symbols.item._precedence)
+                repeat $01, i:(`item)
+                    if (definite _rpn_symbols.i)
+                        irpv pushed, stack
+                            reverse
+                            rawmatch =(, pushed
                                 break
-                            else if (_rpn_symbols.operator._precedence = _rpn_symbols.item._precedence)
-                                if (_rpn_symbols.operator._associativity = _rpn_symbols._NASSOC)
-                                    error "_rpn_builder",\
-                                            <"syntax error: operator '", (`operator), "' is not-associative.">
-                                else if (_rpn_symbols.operator._associativity = _rpn_symbols._LASSOC))
+                            else
+                                if (_rpn_symbols.pushed._precedence > _rpn_symbols.i._precedence)
                                     break
+                                else if (_rpn_symbols.pushed._precedence = _rpn_symbols.i._precedence)
+                                    if (_rpn_symbols.pushed._associativity = _rpn_symbols._NASSOC)
+                                        error "_rpn_builder", <"syntax error: operator '",\
+                                                            (`operator), "' is not-associative.">
+                                    else if (_rpn_symbols.pushed._associativity = _rpn_symbols._LASSOC)
+                                        break
+                                    end if
+                                end if
+                            end rawmatch
+                            restore stack
+                            eval "_rpn_symbols.enqueue ., ", string pushed
+                        end irpv
+                        define stack i
+                    else
+                        rawmatch,polynomial
+                        else
+                            identifier _fasmg_identifier item
+                            if (identifier = __FASMG_IDENTIFIER)
+                                if (definite item) & (elementsof (item))
+                                    polynomial = $01
                                 end if
                             end if
                         end rawmatch
-                        restore stack
-                        _rpn_symbols.enqueue ., operator
-                    end irpv
-                    define stack item
-                else
-                    if (elementsof (item))
-                        rawmatch _, polynomial
-                            polynomial = $01
-                        end rawmatch
+                        . _insert_token item _insert_token.EMPTY
                     end if
-                    . _insert_token item _insert_token.EMPTY
-                end if
+                end repeat
             end rawmatch
         end rawmatch
     end irps
@@ -113,59 +108,60 @@ struc _rpn_evaluator? expression?*
     redefine .
     irps item, expression
         rawmatch _, item
-            _rpn_symbols.symbol_matched
-            if (matched)
-                match,stack
-                    error "_rpn_evaluator", <"missing operand for operator: ", (`item), ".">
-                end match
-                operand_2 = stack
-                restore stack
-                rawmatch =__unary_neg, item
-                    . = ((not operand_2) + $01)
-                else rawmatch =__unary_sub, item
-                    . = (- operand_2)
-                else rawmatch =__unary_not, item
-                    . = (not operand_2)
-                else rawmatch =__string, item
-                    . = (string operand_2)
-                else
-                    relational = $01
+            repeat $01, i:(`item)
+                if (definite _rpn_symbols.i)
                     match,stack
                         error "_rpn_evaluator", <"missing operand for operator: ", (`item), ".">
                     end match
-                    operand_1  = stack
+                    operand_2 = stack
                     restore stack
-                    iterate <operator,builtin>,  __mul,  *, __div,  /, __mod,mod,\
-                                                 __shl,shl, __shr,shr,\
-                                                 __and,and,  __or, or, __xor,xor,\
-                                                 __add,  +, __sub,  -
-                        rawmatch =operator?, item
-                            . = (operand_1) builtin (operand_2)
-                            relational = $00
-                            break
-                        end rawmatch
-                    end iterate
-                    if (relational)
-                        . = $00
-                        iterate <operator,builtin>, __logical_and,"&", __logical_or, "|",\
-                                                             __gt,">",         __ge,">=",\
-                                                             __lt,"<",         __le,"<=",\
-                                                             __eq,"=",         __ne,"<>"
-                            eval "relational_equ reequ ", builtin
-                            match =operator? _, item relational_equ
-                                if ((operand_1) _ (operand_2))
-                                    . = $01
-                                end if
-                            end match
+                    rawmatch =__unary_neg, item
+                        . = ((not operand_2) + $01)
+                    else rawmatch =__unary_sub, item
+                        . = (- operand_2)
+                    else rawmatch =__unary_not, item
+                        . = (not operand_2)
+                    else rawmatch =__string, item
+                        . = (string operand_2)
+                    else
+                        relational = $01
+                        match,stack
+                            error "_rpn_evaluator", <"missing operand for operator: ", (`item), ".">
+                        end match
+                        operand_1  = stack
+                        restore stack
+                        iterate <operator,builtin>,  __mul,  *, __div,  /, __mod,mod,\
+                                                     __shl,shl, __shr,shr,\
+                                                     __and,and,  __or, or, __xor,xor,\
+                                                     __add,  +, __sub,  -
+                            rawmatch =operator?, item
+                                . = (operand_1) builtin (operand_2)
+                                relational = $00
+                                break
+                            end rawmatch
                         end iterate
-                    end if
-                end rawmatch
-                irpv computed, .
-                    define stack computed
-                end irpv
-            else
-                define stack item
-            end if
+                        if (relational)
+                            . = $00
+                            iterate <operator,builtin>, __logical_and,"&", __logical_or, "|",\
+                                                                 __gt,">",         __ge,">=",\
+                                                                 __lt,"<",         __le,"<=",\
+                                                                 __eq,"=",         __ne,"<>"
+                                eval "relational_equ reequ ", builtin
+                                match =operator? _, item relational_equ
+                                    if ((operand_1) _ (operand_2))
+                                        . = $01
+                                    end if
+                                end match
+                            end iterate
+                        end if
+                    end rawmatch
+                    irpv computed, .
+                        define stack computed
+                    end irpv
+                else
+                    define stack item
+                end if
+            end repeat
         end rawmatch
     end irps
     irpv _, stack

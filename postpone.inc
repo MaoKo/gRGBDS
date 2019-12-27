@@ -31,8 +31,8 @@ macro _rgbds_format?
     rgbds_magic := "RGB6"
 
     db rgbds_magic
-    dd _symbols._total
-    dd _sections._sections_counter
+    dd $00 ; _symbols._total
+    dd _sections._user_sections._counter
 ;    repeat _symbols._total, i:$00
 ;        iirpv type, i, _symbols._type
 ;            not_import_label = $00
@@ -46,10 +46,10 @@ macro _rgbds_format?
 ;                                                dd,_section_id, dd,value,
 ;        end if
 ;    end repeat
-    if (_sections._sections_counter)
+    if (_sections._user_sections._counter)
         irpv user_section, _sections._user_sections_list
             db string (user_section), $00
-            namespace _sections._user_sections._#user_section?
+            namespace _sections._user_sections.user_section?
                 db _start
                 db _bank
                 db _align
@@ -69,25 +69,6 @@ macro _rgbds_format?
             end namespace
         end irpv
     end if
-
-;    repeat _sections._section_counter
-        ;iirpv kind, %, _sections._kind
-        ;    section_contain_data = $00
-        ;    if ((kind relativeto _sections.ROM0) | (kind relativeto _sections.ROMX))
-        ;        section_contain_data = $01
-        ;    end if
-        ;end iirpv
-        ;iirpv name, 1, _sections._name
-        ;    db name
-        ;end iirpv
-        ;_record_fields _sections, %, scalar, <db,name>; <TODO>:  <dd,kind>, <dd,org>, <dd,bank>, <dd,align>
-        ;_record_fields _sections, %, scalar, <dd,org>, <dd,bank>, <dd,align>
-        ;if (section_contain_data)
-        ;    _record_fields _sections, %, composite, area
-        ;    _record_fields _sections, %, scalar, <db,_count_patchs>
-        ;    _record_fields _sections, %, composite, patchs
-        ;end if
-;    end repeat
 end macro
 
 postpone ?

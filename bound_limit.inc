@@ -19,9 +19,7 @@ macro _bound_limit? value?*, bitness?*, type?
         else
             error "_bound_limit", "invalid operand: operand must be either SIGNED or UNSIGNED."
         end rawmatch
-    else
-        if (((value) < (-_slimit)) | ((value) >= ulimit))
-            error "_bound_limit", "invalid operand: immediate value not fit properly."
-        end if
-    end match
+    else if (((value) < (-_slimit)) | ((value) >= ulimit))
+        error "_bound_limit", "invalid operand: immediate value not fit properly."
+    end if
 end macro

@@ -1,5 +1,5 @@
 
-; for full reference see (http://goldencrystal.free.fr/GBZ80Opcodes.pdf)
+; for full documentation reference see (http://goldencrystal.free.fr/GBZ80Opcodes.pdf)
 
 _cpu_gbz80? := $00
 namespace _cpu_gbz80?
@@ -34,14 +34,15 @@ namespace _cpu_gbz80?
                                 (_placeholder_2 * p2) +\
                                 (_placeholder_3 * p3)
     end iterate
-    condition? := $00
-    namespace condition?
+    _condition? := $00
+    namespace _condition?
         ; Not  Zero - NZ
         ;      Zero -  Z
         ; Not Carry - NC
         ;     Carry -  C
+        element _condition_type?
         iterate <cc*,value*>, NZ,00b, Z,01b, NC,10b, C,11b
-            element cc? : value
+            element cc? : _condition_type + value
         end iterate
     end namespace
     struc retreive_scale target?*, index?*
@@ -94,6 +95,26 @@ end iterate
 
 macro stop?
     db (00001000b)
+end macro
+
+macro jr? arguments?*&
+    local destination, destination_equ
+    match condition =, target, arguments
+        _assert_element,_cpu_gbz80._condition._condition_type, condition
+        redefine destination_equ target
+        db ((001b shl $05) or (((condition) metadata $01 scale $00) shl $03))
+    else
+        redefine destination_equ arguments
+        db (00011000b)
+    end match
+    destination _rpn_compute destination_equ
+    if (~(elementsof (destination)))
+        _bound_limit (destination - $02), $08, SIGNED
+        db (destination - $02)
+    else
+        db $00
+        ; _section.request_patch _JR_BYTE
+    end if
 end macro
 
 macro daa?
@@ -159,6 +180,9 @@ end macro
 iterate type*, bit,res,set
     macro type? offset?*, r08?*
         local target
+        if (elementsof (offset))
+            error (`type), "Non constant expression."
+        end if
         _bound_limit offset, $03, UNSIGNED
         target _cpu_gbz80.dereference_hl r08
         _assert_element,_cpu_gbz80._register_r08, target
