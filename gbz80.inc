@@ -4,6 +4,12 @@ namespace _cpu_gbz80?
     _NULL_PLACEHOLDER := -$01
     _INCREMENT := 0b
     _DECREMENT := 1b
+    iterate <action*,instructions*>, _INCREMENT,<inc,ldi, pop>,\
+                                     _DECREMENT,<dec,ldd,push>
+        iterate instruction, instructions
+            instruction := action
+        end iterate
+    end iterate
     element _register_r08?
     iterate <type*,value*>, A,$07, B,$00, C,$01, D,$02, E,$03, H,$04, L,$05, _Memory_HL,$06
         element type? : _register_r08 + value
@@ -19,15 +25,55 @@ namespace _cpu_gbz80?
                                  AF,_NULL_PLACEHOLDER,_NULL_PLACEHOLDER,              11b,\
                                  PC,_NULL_PLACEHOLDER,_NULL_PLACEHOLDER,_NULL_PLACEHOLDER
         element type? : _register_r16 + $00
-        element _#type#_proxy? : (_placeholder_1 * p1) +\
-                                 (_placeholder_2 * p2) +\
-                                 (_placeholder_3 * p3)
+        element type?.proxy? :  (_placeholder_1 * p1) +\
+                                (_placeholder_2 * p2) +\
+                                (_placeholder_3 * p3)
     end iterate
+    struc retreive_scale target?*, index?*
+        namespace _cpu_gbz80?
+            _assert_element,_register_r16, target
+            . = ((target.proxy metadata $01) scale index)
+            if ((.) = _NULL_PLACEHOLDER)
+                error "retreive_scale", "instruction error: register 16-bit non valid."
+            end if
+        end namespace
+    end struc
+    struc dereference_hl? target?*
+        namespace _cpu_gbz80?
+            . = _Memory_HL
+            match register, target
+                rawmatch      =[ =HL? =], register
+                else rawmatch =( =HL? =), register
+                else rawmatch =[ =HL? =), register
+                else rawmatch =( =HL? =], register
+                else
+                    . = #register ; get rid of the context associated with 'register'
+                    if (definite #register.proxy) ; 16-bit register
+                        .proxy = #register.proxy
+                    end if
+                end rawmatch
+            end match
+        end namespace
+    end struc
 end namespace
 
 macro nop?
     db (00000000b)
 end macro
+
+iterate type*, inc,dec
+    macro type? r08_r16?*
+        local target, proxy, feedback
+        target _cpu_gbz80.dereference_hl r08_r16
+        _assert_element feedback, _cpu_gbz80._register_r08, target
+        if (~(feedback))
+            db (((target metadata $01 scale $00) shl $03) or (10b shl $01) or (_cpu_gbz80.type))
+        else
+            proxy _cpu_gbz80.retreive_scale target, $02
+            db ((proxy shl $04) or (_cpu_gbz80.type shl $03) or (011b))
+        end if
+    end macro
+end iterate
 
 macro stop?
     db (00001000b)
@@ -53,19 +99,14 @@ macro halt?
     db (01110110b)
 end macro
 
-iterate <type*,action*>, push,_DECREMENT, pop,_INCREMENT
+iterate type*, pop,push
     macro type? r16?*
         local target, proxy
-        match reg, r16
-            target = _cpu_gbz80.reg
-            proxy  = _cpu_gbz80._#reg#_proxy
+        match register, r16
+            target = _cpu_gbz80.register
         end match
-        _assert_element _cpu_gbz80._register_r16, target
-        proxy = ((proxy metadata $01) scale $03)
-        if (proxy = _cpu_gbz80._NULL_PLACEHOLDER)
-            error (`type), "instruction error: register 16-bit non valid."
-        end if
-        db ((11b shl $06) or (proxy shl $04) or (_cpu_gbz80.action shl $02) or (01b))
+        proxy _cpu_gbz80.retreive_scale target, $03
+        db ((11b shl $06) or (proxy shl $04) or (_cpu_gbz80.type shl $02) or (01b))
     end macro
 end iterate
 

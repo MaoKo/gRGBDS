@@ -23,8 +23,9 @@ include "error.inc"
 include "bound_limit.inc"
 include "gbz80.inc"
 
-push AF
-pop DE
+inc DE
+;pusH AF
+;pop DE
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)
