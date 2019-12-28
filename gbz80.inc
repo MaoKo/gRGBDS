@@ -9,11 +9,11 @@ namespace _cpu_gbz80?
     iterate <action*,instructions*>, _INCREMENT,<inc,ldi, pop>,\
                                      _DECREMENT,<dec,ldd,push>
         iterate instruction, instructions
-            instruction? := action
+            _#instruction? := action
         end iterate
     end iterate
     iterate <instruction*,pattern*>, bit,01b, res,10b, set,11b
-        instruction? := pattern
+        _#instruction? := pattern
     end iterate
     element _register_r08?
     iterate <type*,value*>, A,$07, B,$00, C,$01, D,$02, E,$03, H,$04, L,$05, _Memory_HL,$06
@@ -45,7 +45,7 @@ namespace _cpu_gbz80?
             element cc? : _condition_type + value
         end iterate
     end namespace
-    struc retreive_scale target?*, index?*
+    struc retreive_scale? target?*, index?*
         namespace _cpu_gbz80?
             _assert_element,_register_r16, target
             . = ((target.proxy metadata $01) scale index)
@@ -56,7 +56,7 @@ namespace _cpu_gbz80?
             end if
         end namespace
     end struc
-    struc dereference_hl? target?*
+    struc retreive_register? target?*
         namespace _cpu_gbz80?
             . = _Memory_HL
             match register, target
@@ -82,13 +82,13 @@ end macro
 iterate type*, inc,dec
     macro type? r08_r16?*
         local target, proxy, feedback
-        target _cpu_gbz80.dereference_hl r08_r16
+        target _cpu_gbz80.retreive_register r08_r16
         _assert_element feedback, _cpu_gbz80._register_r08, target
         if (~(feedback))
-            db (((target metadata $01 scale $00) shl $03) or (10b shl $01) or (_cpu_gbz80.type))
+            db (((target metadata $01 scale $00) shl $03) or (10b shl $01) or (_cpu_gbz80._#type))
         else
             proxy _cpu_gbz80.retreive_scale target, $02
-            db ((proxy shl $04) or (_cpu_gbz80.type shl $03) or (011b))
+            db ((proxy shl $04) or (_cpu_gbz80._#type shl $03) or (011b))
         end if
     end macro
 end iterate
@@ -98,22 +98,22 @@ macro stop?
 end macro
 
 macro jr? arguments?*&
-    local destination, destination_equ
+    local destination, postfix, polynomial
     match condition =, target, arguments
         _assert_element,_cpu_gbz80._condition._condition_type, condition
-        redefine destination_equ target
+        redefine destination target
         db ((001b shl $05) or (((condition) metadata $01 scale $00) shl $03))
     else
-        redefine destination_equ arguments
+        redefine destination arguments
         db (00011000b)
     end match
-    destination _rpn_compute destination_equ
-    if (~(elementsof (destination)))
+    destination _rpn_single_pass postfix, polynomial, destination
+    if (~(polynomial))
         _bound_limit (destination - $02), $08, SIGNED
         db (destination - $02)
     else
         db $00
-        ; _section.request_patch _JR_BYTE
+        _section.request_patch postfix, _JR_BYTE
     end if
 end macro
 
@@ -140,9 +140,9 @@ end macro
 iterate type*, pop,push
     macro type? r16?*
         local target, proxy
-        target _cpu_gbz80.dereference_hl r16
+        target _cpu_gbz80.retreive_register r16
         proxy _cpu_gbz80.retreive_scale target, $03
-        db ((11b shl $06) or (proxy shl $04) or (_cpu_gbz80.type shl $02) or (01b))
+        db ((11b shl $06) or (proxy shl $04) or (_cpu_gbz80._#type shl $02) or (01b))
     end macro
 end iterate
 
@@ -184,8 +184,8 @@ iterate type*, bit,res,set
             error (`type), "Non constant expression."
         end if
         _bound_limit offset, $03, UNSIGNED
-        target _cpu_gbz80.dereference_hl r08
+        target _cpu_gbz80.retreive_register r08
         _assert_element,_cpu_gbz80._register_r08, target
-        db ((11001011b) or (_cpu_gbz80.type shl $06) or (offset shl $03) or (target metadata $01 scale $00))
+        db ((11001011b) or (_cpu_gbz80._#type shl $06) or (offset shl $03) or (target metadata $01 scale $00))
     end macro
 end iterate

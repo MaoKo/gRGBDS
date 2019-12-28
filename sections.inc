@@ -26,7 +26,9 @@ namespace _sections?
                                          __unary_not,$23,          __eq,$30,          __ne,$31,\
                                                 __gt,$32,          __lt,$33,          __ge,$34,\
                                                 __le,$35,         __shl,$40,         __shr,$41
-                symbol? := value
+                repeat $01, i:(`symbol)
+                    ?i? := value
+                end repeat
             end iterate
             _LONG_INT? := $80
             _LONG_SYM? := $81
@@ -39,43 +41,68 @@ namespace _sections?
     end namespace
 end namespace
 
-;struc _request_patch? expression?*, kind?*
-;    local space, offset, rpn_size, rpn_data
-;    redefine . space
-;    offset = ($ - $$)
-;    virtual at $00
-;        space::
-;        db __file__, $00
-;        dd __line__
-;        dd offset
-;        db _sections._patch_builder.types.kind
-;        dd rpn_size
-;        virtual at $00
-;            irps item, expression
-;                rawmatch _, item
-;                    if (defined _sections._patch_builder.symbols.item)
-;                        db _sections._patch_builder.symbols.item
-;                    else
-;                        if (elementsof (item))
-;                            db _sections._patch_builder.symbols._LONG_SYM
-;                           if (_symbols._symbols_type relativeto (item metadata $01))
-;                                dd ((item metadata $01) scale $00)
-;                            else
-;                                error "_request_patch", <"syntax error: '", (`item), "' is not an label.">
-;                            end if
-;                        else
-;                            db _sections._patch_builder.symbols._LONG_INT
-;                            dd item
-;                        end if
-;                    end if
-;                end rawmatch
-;            end irps
-;            load rpn_data : $ from $$
-;        end virtual
-;        rpn_size := (lengthof (rpn_data))
-;        db rpn_data
-;    end virtual
-;end struc
+macro _assert_section? ROM?
+    namespace _sections?._user_sections?
+        if (_current = _NULL_SECTION)
+            error "_assert_section", "program error: code generation before SECTION directive."
+        end if
+        rawmatch _, ROM
+            if (ROM)
+                repeat $01, i:(_current)
+                    if (~(?i?.__native?))
+                        error "_assert_section", <"program error: section '", string (i),\
+                            "' cannot contain code or data (nor ROM0 or ROMX).">
+                    end if
+                end repeat
+            end if
+        end rawmatch
+    end namespace
+end macro
+
+macro _request_patch? postfix?*, kind?*
+    local space, offset, rpn_size, rpn_data
+    _assert_section $01
+    offset = (($) - ($$))
+    virtual at $00
+        space::
+        db __file__, $00
+        dd __line__
+        dd offset
+        db _sections._patch_builder._types.kind
+        dd rpn_size
+        virtual at $00
+            irps item, postfix
+                rawmatch _, item
+                    repeat $01, i:(`item)
+                        if (defined _sections._patch_builder._symbols.i?)
+                            db _sections._patch_builder._symbols.i?
+                        else
+                            if (item eqtype $00)
+                                if (elementsof (item))
+                                    db _sections._patch_builder._symbols._LONG_SYM
+                                    _assert_element,_symbols._symbols_type, item
+                                    dd ((item metadata $01) scale $00)
+                                else
+                                    db _sections._patch_builder._symbols._LONG_INT
+                                    dd item
+                                end if
+                            end if
+                        end if
+                    end repeat
+                end rawmatch
+            end irps
+            load rpn_data : ($) from ($$)
+        end virtual
+        rpn_size := (lengthof (rpn_data))
+        db rpn_data
+    end virtual
+    repeat $01, i:(_sections._user_sections._current)
+        namespace _sections._user_sections.i?
+            define _patchs? space
+            _count_patchs? = _count_patchs + $01
+        end namespace
+    end repeat
+end macro
 
 macro _handle_defined_data?
     iterate disable*, dd,dp,dq,dt,ddq,dqq,ddqq,\
@@ -88,29 +115,11 @@ macro _handle_defined_data?
     end iterate
     iterate <directive*,type*>, db,_BYTE, dw,_WORD, dl,_LONG
         macro directive? line?*&
-            local rpn_expression, rpn_result, polynomial, patch_space
-            if (_sections._user_sections._current = _sections._NULL_SECTION)
-                error (`directive), "program error: code generation before SECTION directive."
-            end if
+            _assert_section $01
             repeat $01, i:(_sections._user_sections._current)
-                namespace _sections._user_sections.i?
-                    if (~(__native))
-                        error (`directive), <"program error: section '", name,\
-                            "' cannot contain code or data (nor ROM0 or ROMX).">
-                    end if
-                    ;rpn_expression _rpn_builder polynomial, line
-                    ;if (polynomial) ; if polynomial are present let the linker do the computation
-                    ;    _request_patch patch_space, rpn_expression, _sections._patchs.type
-                    ;    _patchs equ patch_space
-                    ;    _count_patchs? = _count_patchs + $01
-                    ;    rpn_result = $00
-                    ;else
-                    ;    _rpn_evaluator rpn_result, rpn_expression
-                    ;end if
-                    virtual _area
-                        directive line ; rpn_result
-                    end virtual
-                end namespace
+                virtual _sections._user_sections.i._area
+                    directive line
+                end virtual
             end repeat
         end macro
     end iterate

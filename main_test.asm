@@ -6,13 +6,12 @@ include "assert.inc"
 include "insert_token.inc"
 
 include "irps.inc"
-;include "string.inc"
+include "string.inc"
 
 include "preprocessor.inc"
-include "rpn.inc"
-include "string_function.inc"
+;include "string_function.inc"
 include "fasmg_identifier.inc"
-;include "rpn.inc"
+include "rpn.inc"
 
 include "reverse.inc"
 include "forward.inc"
@@ -22,11 +21,11 @@ include "error.inc"
 include "bound_limit.inc"
 include "gbz80.inc"
 include "sections.inc"
-;include "postpone.inc"
+include "symbols.inc"
+include "postpone.inc"
 
-A _rpn_single_pass,, 1 __add 2
-A _rpn_single_pass,, 1 __add 2
-display A+"0", $A
+section "ABC",ROM0
+_request_patch 1 2 __add, _BYTE
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)
