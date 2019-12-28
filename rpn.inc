@@ -174,6 +174,33 @@ struc _rpn_evaluator? expression?*
 end struc
 
 _rpn_cache? := $00
+struc _rpn_single_pass? postfix?, polynomial?, expression?*
+    local build, variable
+    match _, expression
+        repeat $01, i:(`_)
+            if (definite _rpn_cache.i)
+                iterate <j,k>    postfix,_p#ostfix,\
+                              polynomial,_p#olynomial
+                    rawmatch _1, j
+                        j reequ _rpn_cache.i.k
+                    end rawmatch
+                end iterate
+                . = _rpn_cache.i
+            else
+                build _rpn_builder variable, expression
+                . _rpn_evaluator build
+                define  _rpn_cache.i?
+                restore _rpn_cache.i?
+                _rpn_cache.i? = .
+                namespace _rpn_cache?.i?
+                    _postfix?       reequ build
+                    _polynomial?    reequ variable
+                end namespace
+            end if
+        end repeat
+    end match
+end struc
+
 struc _rpn_compute expressions?*&
     ; TODO: Add cached rpn expression ;
     local rpn_build, polynomial, rpn_evaluate

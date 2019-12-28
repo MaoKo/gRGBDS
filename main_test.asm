@@ -24,10 +24,9 @@ include "gbz80.inc"
 include "sections.inc"
 ;include "postpone.inc"
 
-A _rpn_builder, 1 __add 2
-match _, A
-_
-end match
+A _rpn_single_pass,, 1 __add 2
+A _rpn_single_pass,, 1 __add 2
+display A+"0", $A
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)
