@@ -113,7 +113,7 @@ macro jr? arguments?*&
         db (destination - $02)
     else
         db $00
-        _section.request_patch postfix, _JR_BYTE
+        _request_patch postfix, _JR_BYTE
     end if
 end macro
 

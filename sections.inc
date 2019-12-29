@@ -60,9 +60,14 @@ macro _assert_section? ROM?
 end macro
 
 macro _request_patch? postfix?*, kind?*
-    local space, offset, rpn_size, rpn_data
+    local space, offset, wrapper, rpn_size, rpn_data
+    wrapper =: $00
+    if (_sections._wrap_db)
+        end _handle_defined_data
+        wrapper =: $01
+    end if
     _assert_section $01
-    offset = (($) - ($$))
+    offset = (($) - ($$)) ; TODO
     virtual at $00
         space::
         db __file__, $00
@@ -79,8 +84,8 @@ macro _request_patch? postfix?*, kind?*
                         else
                             if (item eqtype $00)
                                 if (elementsof (item))
-                                    db _sections._patch_builder._symbols._LONG_SYM
                                     _assert_element,_symbols._symbols_type, item
+                                    db _sections._patch_builder._symbols._LONG_SYM
                                     dd ((item metadata $01) scale $00)
                                 else
                                     db _sections._patch_builder._symbols._LONG_INT
@@ -102,37 +107,64 @@ macro _request_patch? postfix?*, kind?*
             _count_patchs? = _count_patchs + $01
         end namespace
     end repeat
+    if (wrapper)
+        _handle_defined_data
+    end if
 end macro
 
 macro _handle_defined_data?
-    iterate disable*, dd,dp,dq,dt,ddq,dqq,ddqq,\
+    _sections?._wrap_db? =: $01
+    iterate disable*,       dd,dp,dq,dt,ddq,dqq,ddqq,\
                       rb,rw,rd,rp,rq,rt,rdq,rqq,rdqq
-        iterate kind*, macro,struc
-            kind disable? line&
-                error (`disable), "syntax error: directive unknown."
-            end kind
+        iterate type*, macro,struc
+            type disable? line&
+                error (`disable), "syntax error: instruction temporally disabled."
+            end type
         end iterate
     end iterate
+
+    macro dl? line?&
+        emit $04: line
+    end macro
+
+    struc dl? line?&
+        . emit $04: line
+    end struc
+
     iterate <directive*,type*>, db,_BYTE, dw,_WORD, dl,_LONG
         macro directive? line?*&
+            local postfix, polynomial, return
             _assert_section $01
             repeat $01, i:(_sections._user_sections._current)
-                virtual _sections._user_sections.i._area
-                    directive line
-                end virtual
+                iterate item*, line
+                    return _rpn_single_pass postfix, polynomial, item
+                    if (polynomial)
+                        directive $00
+                        _request_patch postfix, type
+                    else
+                        virtual _sections._user_sections.i._area
+                            directive item
+                        end virtual
+                    end if
+                end iterate
             end repeat
         end macro
     end iterate
+
+    macro ds? ; TODO
+    end macro
 end macro
 
 macro end?._handle_defined_data?
+    _sections?._wrap_db? =: $00
     _sections?._user_sections._current? = _sections._NULL_SECTION
-    purge db?,dw?,dl?
-    iterate disable, dd,dp,dq,dt,ddq,dqq,ddqq,\
+    iterate disable,    dl,dd,dp,dq,dt,ddq,dqq,ddqq,\
                      rb,rw,rd,rp,rq,rt,rdq,rqq,rdqq
         purge   disable?
         restruc disable?
     end iterate
+    purge db?,dw?,dl?
+    purge ds?
 end macro
 
 macro section? name?*, type?*, options?&

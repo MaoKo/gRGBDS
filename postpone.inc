@@ -50,15 +50,17 @@ macro _rgbds_format?
         irpv user_section, _sections._user_sections_list
             db string (user_section), $00
             namespace _sections._user_sections.user_section?
-                db _start
-                db _bank
-                db _align
+                dd $00 ; TODO size
+                db ((_kind metadata $01) scale $00)
+                dd _start
+                dd _bank
+                dd _align
                 if (__native)
                     virtual _area
                         load virtual_data : $ from $$
                     end virtual
                     db virtual_data
-                    db _count_patchs
+                    dd _count_patchs
                     irpv patch, _patchs
                         virtual patch
                             load virtual_data : $ from $$
@@ -72,7 +74,10 @@ macro _rgbds_format?
 end macro
 
 postpone ?
-;    end _catch_line
+;   end _catch_line
+;    if (~(_sections._wrap_db))
+;        error "postpone", "something goes wrong."
+;    end if
     end _handle_defined_data
     _rgbds_format
 end postpone

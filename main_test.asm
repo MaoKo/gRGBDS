@@ -24,8 +24,7 @@ include "sections.inc"
 include "symbols.inc"
 include "postpone.inc"
 
-section "ABC",ROM0
-_request_patch 1 2 __add, _BYTE
+a emit $01: $01
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)
