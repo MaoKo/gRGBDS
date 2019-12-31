@@ -22,9 +22,12 @@ include "bound_limit.inc"
 include "gbz80.inc"
 include "sections.inc"
 include "symbols.inc"
-include "postpone.inc"
+;include "postpone.inc"
 
-a emit $01: $01
+B = 2
+repeat $10000
+A _rpn_single_pass,, 1 __add B
+end repeat
 
 ;result _expand_single_line_macro\
 ;    abc strlen (4)

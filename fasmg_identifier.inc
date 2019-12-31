@@ -19,3 +19,8 @@ struc _fasmg_identifier? token?*&
         restore __identifier?.token.
     end match
 end struc
+
+
+repeat $100000
+    x _fasmg_identifier A.2.C
+end repeat

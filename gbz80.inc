@@ -100,9 +100,9 @@ end macro
 macro jr? arguments?*&
     local destination, postfix, polynomial
     match condition =, target, arguments
-        _assert_element,_cpu_gbz80._condition._condition_type, condition
+        _assert_element,_cpu_gbz80._condition._condition_type, _cpu_gbz80._condition.condition
         redefine destination target
-        db ((001b shl $05) or (((condition) metadata $01 scale $00) shl $03))
+        db ((001b shl $05) or (((_cpu_gbz80._condition.condition) metadata $01 scale $00) shl $03))
     else
         redefine destination arguments
         db (00011000b)

@@ -36,9 +36,10 @@ namespace _sections?
     end namespace
     _user_sections? := $00
     namespace _user_sections?
-        redefine _current? _NULL_SECTION
+        _current? = _NULL_SECTION
         _counter? = $00
     end namespace
+    _wrap_db? = $00
 end namespace
 
 macro _assert_section? ROM?
@@ -60,13 +61,13 @@ macro _assert_section? ROM?
 end macro
 
 macro _request_patch? postfix?*, kind?*
-    local space, offset, wrapper, rpn_size, rpn_data
-    wrapper =: $00
+    local space, offset, wrapper, rpn_data
+    _assert_section $01
+    wrapper = $00
     if (_sections._wrap_db)
         end _handle_defined_data
-        wrapper =: $01
+        wrapper = $01
     end if
-    _assert_section $01
     offset = (($) - ($$)) ; TODO
     virtual at $00
         space::
@@ -74,7 +75,6 @@ macro _request_patch? postfix?*, kind?*
         dd __line__
         dd offset
         db _sections._patch_builder._types.kind
-        dd rpn_size
         virtual at $00
             irps item, postfix
                 rawmatch _, item
@@ -93,12 +93,12 @@ macro _request_patch? postfix?*, kind?*
                                 end if
                             end if
                         end if
-                    end repeat
+                   end repeat
                 end rawmatch
             end irps
             load rpn_data : ($) from ($$)
         end virtual
-        rpn_size := (lengthof (rpn_data))
+        dd (lengthof (rpn_data))
         db rpn_data
     end virtual
     repeat $01, i:(_sections._user_sections._current)
@@ -113,7 +113,7 @@ macro _request_patch? postfix?*, kind?*
 end macro
 
 macro _handle_defined_data?
-    _sections?._wrap_db? =: $01
+    _sections?._wrap_db? = $01
     iterate disable*,       dd,dp,dq,dt,ddq,dqq,ddqq,\
                       rb,rw,rd,rp,rq,rt,rdq,rqq,rdqq
         iterate type*, macro,struc
@@ -123,11 +123,11 @@ macro _handle_defined_data?
         end iterate
     end iterate
 
-    macro dl? line?&
+    macro dl? line?*&
         emit $04: line
     end macro
 
-    struc dl? line?&
+    struc dl? line?*&
         . emit $04: line
     end struc
 
@@ -138,26 +138,37 @@ macro _handle_defined_data?
             repeat $01, i:(_sections._user_sections._current)
                 iterate item*, line
                     return _rpn_single_pass postfix, polynomial, item
-                    if (polynomial)
-                        directive $00
-                        _request_patch postfix, type
-                    else
-                        virtual _sections._user_sections.i._area
-                            directive item
-                        end virtual
-                    end if
+                    virtual _sections._user_sections.i._area
+                        if ($ < $8000)
+                            if (polynomial)
+                                directive $00
+                                _request_patch postfix, type
+                            else
+                                directive item
+                            end if
+                        else
+                            error (`directive), <"Section '' is too big (max size = 0x8000).">
+                        end if
+                    end virtual
                 end iterate
+            end repeat
+        end macro
+        macro _raw_#directive? line?*&
+            _assert_section $01
+            repeat $01, i:(_sections._user_sections._current)
+                virtual _sections._user_sections.i._area
+                    directive line
+                end virtual
             end repeat
         end macro
     end iterate
 
-    macro ds? ; TODO
+    macro ds? line?*&
     end macro
 end macro
 
 macro end?._handle_defined_data?
-    _sections?._wrap_db? =: $00
-    _sections?._user_sections._current? = _sections._NULL_SECTION
+    _sections?._wrap_db? = $00
     iterate disable,    dl,dd,dp,dq,dt,ddq,dqq,ddqq,\
                      rb,rw,rd,rp,rq,rt,rdq,rqq,rdqq
         purge   disable?
@@ -169,6 +180,9 @@ end macro
 
 macro section? name?*, type?*, options?&
    local kind, bank, start, align, space
+    if (~(_sections._wrap_db))
+        _handle_defined_data
+    end if
     _assert_string (name)
     align = _sections._FLOAT_CONFIG
     bank  = _sections._FLOAT_CONFIG
@@ -210,7 +224,7 @@ macro section? name?*, type?*, options?&
     if (bank <> _sections._FLOAT_CONFIG)
         if ((bank <= $000) | (bank >= $1FF))
             error "section", "invalid operand: bank number must fit between $000-$1FF."
-        else if ((kind <> _sections.ROMX) & (kind <> _sections.VRAM)\
+        else if ((kind <> _sections.ROMX) & (kind <> _sections.#VRAM)\
                & (kind <> _sections.SRAM) & (kind <> _sections.WRAMX))
             error "section", "invalid operand: bank only available for ROMX, WRAMX, SRAM or VRAM sections."
         end if
@@ -233,8 +247,8 @@ macro section? name?*, type?*, options?&
                             virtual at $00 ; create a new virtual area for the section
                                 space::
                             end virtual
-                            __native?       =  $01
-                            _count_patchs?  =: $00
+                            __native?       = $01
+                            _count_patchs?  = $00
                             redefine _area? space
                         end if
                     end namespace
@@ -251,7 +265,7 @@ macro section? name?*, type?*, options?&
                 end iterate
             end namespace
         end if
-        _sections._user_sections._current? =: i
+        _sections._user_sections._current? = i
     end repeat
 end macro
 

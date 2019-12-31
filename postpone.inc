@@ -75,9 +75,10 @@ end macro
 
 postpone ?
 ;   end _catch_line
-;    if (~(_sections._wrap_db))
-;        error "postpone", "something goes wrong."
-;    end if
+    if (~(_sections._wrap_db))
+        error "postpone", "defined data has not be handled correctly."
+    end if
     end _handle_defined_data
+    _sections._user_sections._current? = _sections._NULL_SECTION
     _rgbds_format
 end postpone

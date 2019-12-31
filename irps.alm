@@ -1,0 +1,51 @@
+
+calminstruction _backend_irps? return?*, text?*&
+        local       command, identifier, check_void, check_space
+_L1:    transform   text
+        jyes        _L1
+        arrange     text, text=# ; # placeholder for EOF
+_L2:    match       head tail, text
+        jyes        _L3
+        exit
+_L3:    arrange     command, =redefine =__prefix?.text
+        assemble    command
+        arrange     identifier, =__prefix?
+        transform   identifier
+        jno         _L5
+        arrange     command, =restore =__prefix?
+        assemble    command
+        publish     :return, head
+        arrange     checkspace, head
+_L4:    arrange     command, =rawmatch ==check_space== =insert, text ; check if followed by space
+        assemble    command
+        arrange     command, =define return
+        assemble    command
+        arrange     command, =end =rawmatch
+        assemble    command
+        jump        _L10
+_L5:    arrange     identifier, head
+_L6:    match       first second, tail
+        jno         _L11
+        match       ., first
+        jno         _L7
+        arrange     identifier, identifier.
+        jump        _L8
+_L7:    match       cut., identifier
+        jno         _L9
+        arrange     identifier, cut.first
+_L8:    arrange     tail, second
+        arrange     check_void, =__prefix?.identifier
+        transform   check_void
+        jno         _L6
+        match       . rest, tail
+        jno         _L9
+        arrange     identifier, identifier.
+        arrange     tail, rest
+_L9:    publish     :return, identifier
+        arrange     check_space, identifier
+        jump        _L4
+_L10:   arrange     text, tail
+        jump        _L2
+_L11:   publish     :return, head
+end calminstruction
+

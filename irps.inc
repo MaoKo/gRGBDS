@@ -66,6 +66,7 @@ macro _irps_core? parameter?*, text?*&
                     end match
                 else
                     define token
+                    break
                 end match
             end while
         end match
