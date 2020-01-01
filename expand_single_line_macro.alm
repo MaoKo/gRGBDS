@@ -1,0 +1,37 @@
+
+include "asmcmd.inc"
+include "expand.inc"
+include "purge.inc"
+
+calminstruction _add_single_line_macro? list?*&
+        local       target, assign
+        expand      list
+        arrange     list, list =__EOF
+        arrange     target, =_single_line_macro?
+        publish     target, target ; defining with some garbage value
+        asmcmd      =namespace =_single_line_macro?
+        arrange     target, =_single_line_macro_list?
+loop:   match       first=,second tail, list
+        jno         quit
+        arrange     assign, first,second
+        publish     :target, assign
+        stringify   first
+        compute     first, +first
+        arrange     first, =?first
+        publish     first:, second
+        match       =, _, tail
+        jno         next
+        arrange     tail, _
+next:   arrange     list, tail
+        jump        loop   
+quit:   asmcmd      =end namespace
+end calminstruction
+
+_add_single_line_macro  STRLEN,_strlen,\
+                        STRCHR,_strchr
+
+calminstruction _expand_single_line_macro? return?*, text?*&
+        local       callargs
+        expand      text
+end calminstruction
+

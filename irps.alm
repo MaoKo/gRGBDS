@@ -49,3 +49,11 @@ _L10:   arrange     text, tail
 _L11:   publish     :return, head
 end calminstruction
 
+
+macro test? display?*
+    calminstruction nested?
+        display "TEST", $0A
+    end calminstruction
+end macro
+
+test
