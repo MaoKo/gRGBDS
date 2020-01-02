@@ -1,0 +1,49 @@
+
+_symbols_operator? := $00
+namespace _symbols_operator?
+    _one_symbols_operator? := $00
+    _two_symbols_operator? := $00
+    namespace _one_symbols_operator?
+        _unary_symbols? := $00
+        iterate <string_operator*,substitute*,is_unary>,    "+",__add,__unary_add,\
+                                                            "-",__sub,__unary_sub,\
+                                                            "*",__mul,
+            repeat $01, i:(`string_operator)
+                constdefine ?i? substitute
+                rawmatch _, is_unary
+                    namespace _unary_symbols?
+                        constdefine ?i? is_unary
+                    end namespace
+                end rawmatch
+            end repeat
+        end iterate
+    end namespace
+    namespace _two_symbols_operator?
+    end namespace
+end namespace
+
+redefine __rso_item?
+calminstruction _replace_symbols_operator? return?*, text?*&
+        local       lookup, temporary, unary, continue, wrapper
+        expand      text
+        asmcmd      =_backend_irps =__rso_return, text
+        compute     unary, $00
+        asmcmd      =irpv =__rso_item, =__rso_return
+        arrange     wrapper, __rso_item
+        match       ,__rso_item
+        jyes        space_here
+        arrange     lookup, __rso_item
+        stringify   lookup
+        compute     lookup, +lookup
+        arrange     lookup, _symbols_operator?._one_symbols_operator?.lookup
+        transform   lookup
+        jno         not_one_symbols
+        check       unary & (definite _symbols_operator?._one_symbols_operator?._unary_symbols?.lookup)
+        jno         not_unary
+    not_unary:
+    not_one_symbols:
+    space_here:
+        asmcmd      =end =irpv
+        publish     :return, temporary
+end calminstruction
+

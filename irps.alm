@@ -1,59 +1,58 @@
 
+_irps_cache? := $00
 calminstruction _backend_irps? return?*, text?*&
-        local       command, identifier, check_void, check_space
-_L1:    transform   text
-        jyes        _L1
-        arrange     text, text=# ; # placeholder for EOF
-_L2:    match       head tail, text
-        jyes        _L3
+        ; ** TODO ** CACHE
+        local       identifier, check_void, check_space
+        expand      text
+    init:   
+        arrange     text, text =__EOF
+    main:   
+        match       head tail, text
+        jyes        next
         exit
-_L3:    arrange     command, =redefine =__prefix?.text
-        assemble    command
+    next:   
+        asmcmd      =redefine =__prefix?.text
         arrange     identifier, =__prefix?
         transform   identifier
-        jno         _L5
-        arrange     command, =restore =__prefix?
-        assemble    command
+        jno         extract
+        asmcmd      =restore =__prefix?
         publish     :return, head
-        arrange     checkspace, head
-_L4:    arrange     command, =rawmatch ==check_space== =insert, text ; check if followed by space
-        assemble    command
-        arrange     command, =define return
-        assemble    command
-        arrange     command, =end =rawmatch
-        assemble    command
-        jump        _L10
-_L5:    arrange     identifier, head
-_L6:    match       first second, tail
-        jno         _L11
+        arrange     check_space, head
+    insert_space:  
+        asmcmd      =rawmatch ==check_space== =insert, text ; check if followed by space
+        asmcmd      =define return
+        asmcmd      =end =rawmatch
+        jump        update
+    extract: 
+        arrange     identifier, head
+    nested_loop: 
+        match       first second, tail
+        jno         finish
         match       ., first
-        jno         _L7
+        jno         nodot
         arrange     identifier, identifier.
-        jump        _L8
-_L7:    match       cut., identifier
-        jno         _L9
+        jump        define
+    nodot:  
+        match       cut., identifier
+        jno         assign
         arrange     identifier, cut.first
-_L8:    arrange     tail, second
+    define: 
+        arrange     tail, second
         arrange     check_void, =__prefix?.identifier
         transform   check_void
-        jno         _L6
+        jno         nested_loop
         match       . rest, tail
-        jno         _L9
+        jno         assign
         arrange     identifier, identifier.
         arrange     tail, rest
-_L9:    publish     :return, identifier
+    assign: 
+        publish     :return, identifier
         arrange     check_space, identifier
-        jump        _L4
-_L10:   arrange     text, tail
-        jump        _L2
-_L11:   publish     :return, head
+        jump        insert_space
+    update: 
+        arrange     text, tail
+        jump        main
+    finish: 
+        publish     :return, head
 end calminstruction
 
-
-macro test? display?*
-    calminstruction nested?
-        display "TEST", $0A
-    end calminstruction
-end macro
-
-test

@@ -3,26 +3,25 @@ include "asmcmd.inc"
 include "expand.inc"
 include "purge.inc"
 
-calminstruction _add_single_line_macro? list?*&
+_single_line_macro? := $00
+calminstruction _add_single_line_macro? aggregate?*&
         local       target, assign
-        expand      list
-        arrange     list, list =__EOF
-        arrange     target, =_single_line_macro?
-        publish     target, target ; defining with some garbage value
-        asmcmd      =namespace =_single_line_macro?
+        expand      aggregate
         arrange     target, =_single_line_macro_list?
-loop:   match       first=,second tail, list
+        arrange     aggregate, aggregate =__EOF
+        asmcmd      =namespace =_single_line_macro?
+loop:   match       first=,second tail, aggregate
         jno         quit
         arrange     assign, first,second
         publish     :target, assign
         stringify   first
-        compute     first, +first
+        compute     first,  +first
         arrange     first, =?first
         publish     first:, second
         match       =, _, tail
         jno         next
         arrange     tail, _
-next:   arrange     list, tail
+next:   arrange     aggregate, tail
         jump        loop   
 quit:   asmcmd      =end namespace
 end calminstruction
@@ -30,8 +29,49 @@ end calminstruction
 _add_single_line_macro  STRLEN,_strlen,\
                         STRCHR,_strchr
 
+redefine __irps_iterator?
 calminstruction _expand_single_line_macro? return?*, text?*&
-        local       callargs
+        local       callargs, function, symbols, cparen, matched, strip
         expand      text
+        asmcmd      =_backend_irps =__irps_return, text
+        asmcmd      =irpv =__irps_iterator, =__irps_return
+        compute     strip, $00
+        match       ,__irps_iterator
+        jyes        assign
+        match       _, function
+        jno         insert
+        match       =(, __irps_iterator
+        jno         rparen
+        compute     cparen, cparen + $01
+        check       matched
+        jno         untouch_strip
+        compute     strip, $01
+    untouch_strip:
+        jump        insert
+    rparen: 
+        match       =), __irps_iterator
+        ;jno
+        compute     cparen, cparen - $01
+        check       (~(cparen))
+        jno         mismatch_paren
+        jump        insert
+    mismatch_paren:
+    insert: 
+        asmcmd      =namespace =_single_line_macro?
+        arrange     symbols, _single_line_macro
+        stringify   symbols
+        compute     symbols,  +symbols
+        arrange     symbols, =?symbols
+        transform   symbols
+        asmcmd      =end =namespace
+        jno         assign
+        arrange     function, symbols
+        arrange     callargs,
+        compute     cparen, $00
+        compute     matched, $01
+    assign: 
+        check       ((~matched) & (~strip))
+        publish     :return, __irps_iterator
+        asmcmd      =end =irpv
 end calminstruction
 

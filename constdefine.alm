@@ -1,0 +1,7 @@
+
+calminstruction constdefine? expression?*&
+    local   token_value
+    arrange token_value,
+    match   expression= token_value, expression
+    publish expression:, token_value
+end calminstruction

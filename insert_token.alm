@@ -1,0 +1,38 @@
+
+?_insert_token? := $00
+constdefine _insert_token?.EMPTY?
+calminstruction _insert_token? destination?*, source?&
+        local       prefix, suffix, insert
+        expand      source
+        asmcmd      =define  destination
+        asmcmd      =restore destination    ; force to be a variable symbol
+        compute     insert, $00
+        arrange     suffix, ""
+        arrange     prefix, destination =reequ
+        stringify   prefix
+        compute     prefix, +prefix
+        arrange     prefix, =string prefix, " "
+        arrange     _, destination
+        transform   _
+        jno         destination_not_defined
+        stringify   _
+        compute     _, +_
+        arrange     suffix, =string _
+    destination_not_defined:
+        match       _, source
+        jno         source_empty
+        stringify   _
+        compute     _, +_
+        arrange     suffix, suffix, =string _
+        match       _= , source
+        jno         source_not_terminate_space
+    source_empty:
+        compute     insert, $01
+    source_not_terminate_space:
+        check       insert
+        jno         not_insert_space
+        arrange     suffix, suffix, " ", "_insert_token?.EMPTY?"
+    not_insert_space:
+        asmcmd      =eval prefix, suffix
+end calminstruction
+
