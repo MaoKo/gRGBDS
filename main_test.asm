@@ -24,9 +24,8 @@ include "sections.inc"
 include "symbols.inc"
 ;include "postpone.inc"
 
-B = 2
-repeat $10000
-A _rpn_single_pass,, 1 __add B
+repeat $1000
+_ _replace_symbols_operator 1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1+1
 end repeat
 
 ;result _expand_single_line_macro\

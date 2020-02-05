@@ -1,6 +1,9 @@
 
+include "expand.inc"
+include "asmcmd.inc"
+
 _irps_cache? := $00
-calminstruction _backend_irps? return?*, text?*&
+calminstruction irps? return?*, text?*&
         ; ** TODO ** CACHE
         local       identifier, check_void, check_space
         expand      text
@@ -11,6 +14,7 @@ calminstruction _backend_irps? return?*, text?*&
         jyes        next
         exit
     next:   
+        asmcmd      =restore =__prefix?
         asmcmd      =redefine =__prefix?.text
         arrange     identifier, =__prefix?
         transform   identifier
@@ -47,12 +51,16 @@ calminstruction _backend_irps? return?*, text?*&
         arrange     tail, rest
     assign: 
         publish     :return, identifier
-        arrange     check_space, identifier
-        jump        insert_space
+       ; arrange     check_space, identifier
+       ; jump        insert_space
     update: 
         arrange     text, tail
         jump        main
     finish: 
         publish     :return, head
 end calminstruction
+
+repeat $10000
+irps ret,_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_
+end repeat
 
