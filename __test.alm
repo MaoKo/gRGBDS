@@ -321,15 +321,14 @@ __bootstrap_xcalm
         assemble        buffer
         arrange         buffer, =instruction source_1, source_2
         assemble        buffer
-        arrange         buffer, =instruction source_1, temporary
+        arrange         buffer, =take source_2, temporary
         assemble        buffer
         exit
     end macro
 
     __xcalm_parse_arguments __xcalm_parse_swap, enable, disable, enable, disable
-    retaincomments
     calminstruction calminstruction?._xcalm_swap? source_1?*, source_2?*
-            local           temporary, holder, reflft, refrgt, buffer
+            local           temporary, buffer
             _xcalm_init     [symbl|const] run, _xcalm_unique temporary
             __xcalm_parse_swap source_1, bitmask, retexp
             check           (bitmask and bitmask_expand)
@@ -337,39 +336,13 @@ __bootstrap_xcalm
             __xcalm_expand  source_1, expand, continue, retexp
         continue:
             assemble        run
-            check           (bitmask and bitmask_var)
-            jno             next_1
+            check           (bitmask and bitmask_varbl)
+            jno             next
             __xcalm_swap    buffer, compute, source_1, source_2, temporary
-        next_1:
-            check           (bitmask and bitmask_sym)
-            jno             next_2
+        next:
             __xcalm_swap    buffer, arrange, source_1, source_2, temporary
-        next_2:
-            _xcalm_exec                              \
-            {                                        \
-                            _xcalm_unique holder    ;\
-                            _xcalm_unique reflft    ;\
-                            _xcalm_unique refrgt    ;\
-            }
-            publish         holder, temporary
-            publish         reflft, source_1
-            publish         refrgt, source_2
-            arrange         buffer, =publish holder, source_1
-            assemble        buffer
-            arrange         buffer, =publish reflft, source_2
-            assemble        buffer
-            arrange         buffer, =publish reffgt, temporary
-            assemble        buffer
     end calminstruction
-    removecomments
     purge calminstruction?.__xcalm_swap?
 end __bootstrap_xcalm
 
 ; *** TEST CASE ***
-
-calminstruction abc?
-    _xcalm_init A, 1
-    _xcalm_init B, 2
-    _xcalm_swap [] ~ A, B
-end calminstruction
-abc
