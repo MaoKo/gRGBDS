@@ -1,0 +1,375 @@
+
+macro __bootstrap_xcalm? init?:$00
+    local count, list
+    count = init
+    struc __xcalm_unique? name?
+        repeat $01, i:(count)
+            eval "redefine . _", (`name), (`i)
+        end repeat
+        count = count + $01
+    end struc
+    macro calminstruction?.__xcalm_local?! names?*&
+        local names
+    end macro
+    macro __xcalm_parse_arguments? calm?*, storage?*, policy?*, _expand?*, _repeat?*
+        local   loop, attribute, finish, number,  next,\
+              atexit,   rand_1,  rand_2,   head, error
+        error? := "[XCALM::ERROR]: invalid arguments"
+        define list calm
+        iterate     generate*, loop, attribute, finish, head, next, atexit
+            generate __xcalm_unique generate
+        end iterate
+        purge header?, builder?, footer?
+        macro header?!
+            esc macro calminstruction?.calm? parameter?*, bitmask?*
+        end macro
+        match =enable? =enable?, _expand _repeat
+            macro header?!
+                esc macro calminstruction?.calm? parameter?*, bitmask?*, retexp?*, retrep?*
+                __xcalm_local retexp?, retrep?
+                compute retexp, $00
+                compute retrep, $00
+            end macro
+        else match =enable?, _expand
+            macro header?!
+                esc macro calminstruction?.calm? parameter?*, bitmask?*, retexp?*
+                __xcalm_local retexp?
+                compute retexp, $00
+            end macro
+        else match =enable?, _repeat
+            macro header?!
+                esc macro calminstruction?.calm? parameter?*, bitmask?*, retret?*
+                __xcalm_local retrep?
+                compute retrep, $00
+            end macro
+        end match
+        match loop= attribute= finish= head= next= atexit, loop attribute finish head next atexit
+            macro footer?!
+                atexit:
+                _xcalm_error
+                finish:
+                esc end macro
+            end macro
+            macro builder?!
+                    __xcalm_local bitmask?, attribute?, head?
+                    compute bitmask, $00
+                    match   [ attribute? ] parameter, parameter
+                    jno     finish
+                loop:
+                    match   attribute, attribute
+                    jno     finish
+                    match   head | attribute, attribute
+                    jyes    next
+                    arrange head, attribute
+                    arrange attribute,
+                next:
+            end macro
+            iterate <parsed*,case_1*,case_2*>, storage,varbl,symbl, policy,stack,const
+                match =disable?, parsed
+                else match =enable?, parsed
+                    rand_1 __xcalm_unique random
+                    rand_2 __xcalm_unique random
+                    number __xcalm_unique number
+                    match rand_1= rand_2= number, rand_1 rand_2 number
+                        macro builder?!
+                                builder
+                                __xcalm_local number?
+                                compute     number, bitmask_#case_1
+                                match       =case_1?, head
+                                jyes        rand_1
+                                compute     number, bitmask_#case_2
+                                match       =case_2?, head
+                                jyes        rand_1
+                                jump        rand_2
+                            rand_1:
+                                check       (bitmask and bitmask_#case_1) or (bitmask and bitmask_#case_2)
+                                jyes        atexit
+                                compute     bitmask, (bitmask or number)
+                                jump        loop
+                            rand_2:
+                        end macro
+                    end match
+                else
+                    err error
+                end match
+            end iterate
+            iterate <parsed*,case*>, _expand,expand, _repeat,repeat
+                match =disable?, parsed
+                else match =enable?, parsed
+                    rand_1 __xcalm_unique random
+                    rand_2 __xcalm_unique random
+                    redefine number retexp
+                    if ((%) = (%%)) ; if _repeat iteration
+                        redefine number retrep
+                    end if
+                    match rand_1= rand_2= number, rand_1 rand_2 number
+                        macro builder?!
+                                builder
+                                match       =case? : number, head
+                                jyes        rand_1
+                                arrange     number, $01
+                                match       =case?, head
+                                jyes        rand_1
+                                jump        rand_2
+                            rand_1:
+                                compute     number, number
+                                check       number < $00
+                                jyes        atexit
+                                check       (bitmask and bitmask_#case)
+                                jyes        atexit
+                                compute     bitmask, (bitmask or bitmask_#case)
+                                jump        loop
+                            rand_2:
+                        end macro
+                    end match
+                else
+                    err error
+                end match
+            end iterate
+            macro launcher?
+                header
+                builder
+                footer
+            end macro
+            launcher
+            purge launcher?
+        end match
+    end macro
+    macro calminstruction?.__xcalm_exhaust? destination?*, source?*,\
+                        declasin?: declasin, declconst?:declconst, declstack?:declstack
+        declasin:
+            publish         destination, source
+            publish         destination, source
+            exit
+        declstack:
+            publish          destination, source
+            publish         :destination, source
+            exit
+        declconst:
+            publish         destination:, source
+            exit
+    end macro
+    macro end?.__bootstrap_xcalm?
+        restruc __xcalm_unique?
+        purge   calminstruction?.__xcalm_local?,\
+                       __xcalm_parse_arguments?,\
+              calminstruction?.__xcalm_exhaust?
+        irpv item, list
+            purge calminstruction?.item?
+            restore list
+        end irpv
+    end macro
+end macro
+
+__xcalm_error? = $00
+macro calminstruction?._xcalm_error? status?:$01
+    compute __xcalm_error, status
+    exit
+end macro
+
+iterate bitmask*, bitmask_varbl,  bitmask_symbl,  bitmask_stack,\
+                  bitmask_const, bitmask_expand, bitmask_repeat
+    bitmask? := ($01 shl (%))
+end iterate
+
+__bootstrap_xcalm
+    macro calminstruction?.__xcalm_expand? target?*, label?*, next?*, counter?*
+        label:
+            check           counter
+            jno             next
+            compute         counter, counter - $01
+            transform       target
+            jyes            label
+    end macro
+
+    __xcalm_parse_arguments __xcalm_parse_init, enable, enable, enable, disable
+    calminstruction calminstruction?._xcalm_init? input?*, text?&
+            __xcalm_parse_init input, bitmask, retexp
+            check       (bitmask and bitmask_expand)
+            jno         variable
+            __xcalm_expand input, expand, variable, retexp
+        variable:
+            check       (bitmask and bitmask_varbl)
+            jno         assign
+            compute     text, text
+        assign:
+            check       (bitmask and bitmask_stack)
+            jyes        declstack
+            check       (bitmask and bitmask_const)
+            jyes        declconst
+            jump        declasin
+            __xcalm_exhaust input, text
+    end calminstruction
+
+    redefine __xcalm_prefix? _
+    match prefix, __xcalm_prefix
+        macro calminstruction?.__xcalm_generate? destination?*, seed?*, count?*
+            arrange destination, =prefix#seed#count
+        end macro
+    end match
+
+    __xcalm_parse_arguments __xcalm_parse_unique, disable, enable, enable, disable
+    calminstruction calminstruction?._xcalm_unique? destination?*
+            local           newsym, buffer
+            _xcalm_init     [varbl] count, $00
+            compute         count, count + $01
+            __xcalm_parse_unique destination, bitmask, retexp
+            check           (bitmask and bitmask_expand)
+            jno             generate
+            __xcalm_expand destination, expand, generate, retexp
+        generate:
+            __xcalm_generate newsym, destination, count
+            arrange         buffer, =local newsym
+            assemble        buffer
+            check           (bitmask and bitmask_stack)
+            jyes            declstack
+            check           (bitmask and bitmask_const)
+            jyes            declconst
+            jump            declasin
+            __xcalm_exhaust destination, newsym
+    end calminstruction
+
+    restore __xcalm_prefix?
+    purge calminstruction?.__xcalm_generate?
+
+    __xcalm_parse_arguments __xcalm_parse_exec, disable, disable, enable, enable
+    retaincomments
+    calminstruction calminstruction?._xcalm_exec? command?*&
+            local           line, origin, continue, instruction, buffer
+            _xcalm_init     [symbl|const] run, _xcalm_unique line
+            _xcalm_init     [varbl] continue, $00
+            __xcalm_parse_exec command, bitmask, retexp, retrep
+            check           (bitmask and bitmask_expand)
+            jno             next
+            __xcalm_expand  command, expand, next, retexp
+        next:
+            check           (bitmask and bitmask_repeat)
+            jyes            setup
+            compute         retrep, $01
+        setup:
+            arrange         origin, command
+        main:
+            check           retrep
+            jno             terminate
+            match           { command? }, origin
+            jno             reset
+            compute         continue, $01
+        iterate:
+            match           instruction ; command?, command
+            jyes            build
+            compute         continue, $00
+       reset:
+            arrange         instruction, command
+        build:
+            assemble        run
+            publish         line, instruction
+            arrange         buffer, =assemble line
+            assemble        buffer
+            check           continue
+            jyes            iterate
+            compute         retrep, retrep - $01
+            jump            main
+        terminate:
+    end calminstruction
+    removecomments
+
+    __xcalm_parse_arguments __xcalm_parse_expand, disable, disable, enable, disable
+    calminstruction calminstruction?._xcalm_expand? target?*, number?:$01
+            local           counter, until, label, buffer
+            _xcalm_init     [symbl|const] newlabel, _xcalm_unique label
+            _xcalm_init     [symbl|const] newcount, _xcalm_unique counter
+            compute         until, $00
+            arrange         number, number
+            match           =*, number
+            jno             initialise
+            compute         until, $01
+            arrange         number, $00
+        initialise:
+            compute         number, number
+            __xcalm_parse_expand target, bitmask, retexp
+            check           (bitmask and bitmask_expand)
+            jno             continue
+            __xcalm_expand  target, expand, continue, retexp
+        continue:
+            check           number
+            jno             terminate
+            check           until
+            jyes            build
+            assemble        newcount
+            arrange         buffer, =compute counter, number
+            assemble        buffer
+        build:
+            assemble        newlabel
+            arrange         buffer, label :
+            assemble        buffer
+            arrange         buffer, =transform target
+            assemble        buffer
+            check           until
+            jyes            infinity
+            arrange         buffer, =compute counter, counter - $01
+            assemble        buffer
+            arrange         buffer, =check counter
+            assemble        buffer
+        infinity:
+            arrange         buffer, =jyes label
+            assemble        buffer
+        terminate:
+    end calminstruction
+
+    macro calminstruction?.__xcalm_swap? buffer?*, instruction?*, source_1?*, source_2?*, temporary?*
+        arrange         buffer, =instruction temporary, source_1
+        assemble        buffer
+        arrange         buffer, =instruction source_1, source_2
+        assemble        buffer
+        arrange         buffer, =instruction source_1, temporary
+        assemble        buffer
+        exit
+    end macro
+
+    __xcalm_parse_arguments __xcalm_parse_swap, enable, disable, enable, disable
+    retaincomments
+    calminstruction calminstruction?._xcalm_swap? source_1?*, source_2?*
+            local           temporary, holder, reflft, refrgt, buffer
+            _xcalm_init     [symbl|const] run, _xcalm_unique temporary
+            __xcalm_parse_swap source_1, bitmask, retexp
+            check           (bitmask and bitmask_expand)
+            jno             continue
+            __xcalm_expand  source_1, expand, continue, retexp
+        continue:
+            assemble        run
+            check           (bitmask and bitmask_var)
+            jno             next_1
+            __xcalm_swap    buffer, compute, source_1, source_2, temporary
+        next_1:
+            check           (bitmask and bitmask_sym)
+            jno             next_2
+            __xcalm_swap    buffer, arrange, source_1, source_2, temporary
+        next_2:
+            _xcalm_exec                              \
+            {                                        \
+                            _xcalm_unique holder    ;\
+                            _xcalm_unique reflft    ;\
+                            _xcalm_unique refrgt    ;\
+            }
+            publish         holder, temporary
+            publish         reflft, source_1
+            publish         refrgt, source_2
+            arrange         buffer, =publish holder, source_1
+            assemble        buffer
+            arrange         buffer, =publish reflft, source_2
+            assemble        buffer
+            arrange         buffer, =publish reffgt, temporary
+            assemble        buffer
+    end calminstruction
+    removecomments
+    purge calminstruction?.__xcalm_swap?
+end __bootstrap_xcalm
+
+; *** TEST CASE ***
+
+calminstruction abc?
+    _xcalm_init A, 1
+    _xcalm_init B, 2
+    _xcalm_swap [] ~ A, B
+end calminstruction
+abc
